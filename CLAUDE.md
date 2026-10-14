@@ -65,7 +65,6 @@ src/
 ## Running the app
 
 ```bash
-cd C:\Users\evanm\Documents\TruthGrid-Local
 npm install
 npm run dev
 ```
@@ -92,5 +91,57 @@ These are in rough priority order. Check them off as they're completed.
 
 - **Labels are always configurable** — never hardcode "Point", "Example", "Explanation" in user-facing strings. Always read from `session.labels`.
 - **Similarity scores are flags, not grades** — the UI always includes the disclaimer text. Never remove or soften it.
-- **No network calls** — the app must work on flaky school wifi. Nothing should phone home. The `natural` package in `package.json` was included initially but the similarity scorer was written from scratch instead — it can be removed.
+- **No network calls** — the app must work on flaky school wifi. Nothing should phone home. The similarity scorer is written from scratch with no external NLP library — it uses TF-IDF cosine similarity entirely inline.
 - **Shared-device support** — "New Student Session" must always reset fully to the setup screen, clearing all prior student data from React state (not from IndexedDB — responses are kept).
+
+---
+
+## Build output
+
+Production build via `npm run build` (Vite 5):
+
+```
+dist/index.html                   0.59 kB (gzip: 0.35 kB)
+dist/assets/index-*.css           1.92 kB (gzip: 0.77 kB)
+dist/assets/index-*.js          155.95 kB (gzip: 50.20 kB)
+dist/sw.js                        service worker (Workbox)
+dist/manifest.webmanifest         PWA manifest
+```
+
+PWA precache: 5 entries (~155 kB). Build time: ~0.5s.
+
+---
+
+## Known issues
+
+1. **Missing `public/` directory** — `public/icon-192.png` and `public/icon-512.png` are referenced in `vite.config.js` but neither the directory nor the files exist. This is a PWA installability blocker.
+2. **Dead code** — `fullResponse` in `StudentFlow.jsx` (line 35–37) is computed but never stored in the submission object.
+3. **React strict mode double-save** — `Results.jsx` saves to IndexedDB in a `useEffect` with an empty dependency array. In development mode, React 18 StrictMode mounts twice, which could cause a duplicate record. Production is fine.
+4. **No input length limits** — student text fields have no `maxLength`. A student could paste enormous text that bloats IndexedDB.
+5. **No error boundary** — if IndexedDB write fails, the error is caught by `.catch(console.error)` in Results.jsx but the user sees no feedback.
+
+---
+
+## Testing
+
+No test framework is currently installed. No tests exist. Future testing should include:
+
+- **Unit tests** for `scoreSimilarity()` with edge cases (empty strings, identical text, no overlap)
+- **Unit tests** for `db.js` CRUD operations (can use `fake-indexeddb` for Node.js testing)
+- **Component tests** for form validation in TeacherSetup and StudentFlow
+- **Integration test** for the full `setup → writing → results → reset` cycle
+- **PWA/offline test** after icons are added — verify the app loads from service worker cache with network disabled
+
+---
+
+## Agent files
+
+GitHub agent configurations live in `.github/agents/`:
+
+| Agent | Purpose |
+|-------|---------|
+| `truthgrid-local.agent.md` | General development and maintenance |
+| `truthgrid-dashboard.agent.md` | Teacher dashboard and export features |
+| `truthgrid-pwa-reliability.agent.md` | Offline behavior, service worker, icons |
+| `truthgrid-security-review.agent.md` | Security audit, input validation, data leaks |
+| `truthgrid-senior-critic.agent.md` | Brutal code review — bugs, edge cases, quality |
