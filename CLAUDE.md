@@ -4,7 +4,7 @@
 
 A lightweight literary analysis writing tool for BC secondary students, built as a PWA (Progressive Web App). It guides students through a structured one-paragraph response to a reading passage using the **Point → Example → Explanation** framework, repeated three times. Terminology is configurable by the teacher before each session.
 
-This is a spin-off of the **TruthGrid web prototype** (`C:\Users\evanm\Documents\Peer-Review-Prototype`), which was a college-level AI vs. human peer review tool. The web prototype is useful as a reference for business logic patterns but shares almost no UI or data model with this app.
+This is a spin-off of the **TruthGrid web prototype** (the original Peer-Review-Prototype repository), which was a college-level AI vs. human peer review tool. The web prototype is useful as a reference for business logic patterns but shares almost no UI or data model with this app.
 
 ### Client context
 
@@ -71,6 +71,20 @@ npm run dev
 
 Opens at `http://localhost:5173`. The `.claude/launch.json` is configured for the dev server.
 
+### Deployment & Distribution: PWA vs. Desktop App
+
+- **How students and teachers access the app (PWA Model - Recommended for Classrooms)**:
+  - The built static bundle (`dist/`) is deployed to a web server or static host (e.g. GitHub Pages, Cloudflare Pages, school intranet).
+  - Devices connect to Wi-Fi **once** to navigate to the URL in Chrome, Edge, or Safari.
+  - The user clicks **Install TruthGrid** (or "Add to Home Screen"). The browser's Service Worker automatically downloads and precaches 100% of the app assets (`dist/` via Workbox).
+  - From that point onward, the app opens in a standalone window (no browser address bar/tabs) and works **completely offline with zero internet access**.
+  - **Why PWA is preferred over a native `.exe`**: Vancouver School Board (VSB) and most public school districts lock down student Chromebooks and Windows laptops with administrative policies that prohibit running or installing unauthorized `.exe` files. PWAs bypass IT installation restrictions, run on ChromeOS/Windows/Mac/iOS, and auto-update when Wi-Fi is available.
+
+- **Standalone Desktop App (Electron Wrapper)**:
+  - Listed on the roadmap for specialized lockdown / Special Ed use cases.
+  - Wraps the same React code in an Electron shell with kiosk mode (forcing fullscreen, blocking `Ctrl+T`, `Alt+F4`, and dev tools).
+  - Only required when strict offline lockdown or direct filesystem writes (e.g., auto-exporting to a teacher USB key) are needed.
+
 ---
 
 ## Roadmap / what's next
@@ -114,11 +128,16 @@ PWA precache: 5 entries (~155 kB). Build time: ~0.5s.
 
 ## Known issues
 
-1. **Missing `public/` directory** — `public/icon-192.png` and `public/icon-512.png` are referenced in `vite.config.js` but neither the directory nor the files exist. This is a PWA installability blocker.
-2. **Dead code** — `fullResponse` in `StudentFlow.jsx` (line 35–37) is computed but never stored in the submission object.
-3. **React strict mode double-save** — `Results.jsx` saves to IndexedDB in a `useEffect` with an empty dependency array. In development mode, React 18 StrictMode mounts twice, which could cause a duplicate record. Production is fine.
-4. **No input length limits** — student text fields have no `maxLength`. A student could paste enormous text that bloats IndexedDB.
-5. **No error boundary** — if IndexedDB write fails, the error is caught by `.catch(console.error)` in Results.jsx but the user sees no feedback.
+1. **Similarity metric length distortion (Critical)** — `similarity.js` calculates symmetric cosine similarity between student text (typically a 10–20 word quote) and the reading passage (300–600 words). Because cosine similarity divides by $\sqrt{|Passage|}$, a verbatim 15-word quote against a 500-word passage maxes out at ~17%, triggering false red warning badges (`#c62828` for `<20%`) in `Results.jsx`. Should be replaced with asymmetric containment overlap ($\frac{|Tokens_{student} \cap Tokens_{passage}|}{|Tokens_{student}|}$).
+2. **Refresh & navigation data loss (Critical)** — Student writing state in `StudentFlow.jsx` is ephemeral in-memory React state. An accidental page reload, trackpad back-swipe, or dead battery wipes out all student work immediately without a `beforeunload` confirmation or `sessionStorage` autosave.
+3. **Silent IndexedDB failure (Critical)** — `Results.jsx` catches `saveResponse()` rejections with `console.error` without setting UI error states. If IndexedDB storage quota or private browsing causes a write failure, the student sees "Response Submitted" and assumes work is safe when it has been lost.
+4. **Shared-device reset wipes teacher passage & labels (High)** — Clicking "New Student Session" completely resets `session` to `null` in `App.jsx`, unmounting `TeacherSetup` and forcing the teacher to re-enter the reading passage and custom labels for every single student.
+5. **Hardcoded "Point" violates configurable labels invariant (High)** — `StudentFlow.jsx` (line 83: `Point {i + 1} of {NUM_POINTS}`) and `Results.jsx` (line 56: `Point {i + 1}`) hardcode the word "Point", defying the teacher's configured `labels.point`.
+6. **Missing `public/` directory & PWA icons (High Blocker)** — `vite.config.js` and `index.html` reference `/icon-192.png`, `/icon-512.png`, and `/icon.svg`. The `public/` directory does not exist, causing 404s and preventing PWA install prompts.
+7. **`Math.max(...spread)` call stack overflow risk (Medium)** — In `similarity.js`, `Math.max(1, ...Object.values(tf))` spreads unbounded word frequencies into function arguments, which will throw a call stack overflow error if vocabulary exceeds ~65k tokens.
+8. **React StrictMode double-save (Medium)** — In dev mode, `Results.jsx`'s `useEffect` mounts twice, creating duplicate rows in IndexedDB because `db.js` relies on `autoIncrement`.
+9. **Dead code** — `fullResponse` in `StudentFlow.jsx` (line 35–37) is computed but never included in the submission payload.
+10. **`startedAt` dropped from submission (Low)** — `TeacherSetup` generates `startedAt`, but `StudentFlow` discards it, preventing elapsed writing time calculation.
 
 ---
 
