@@ -50,7 +50,9 @@ function countFrequencies(tokens, filterStopwords = true) {
  * @returns {number} Float in range [0, 1].
  */
 export function scoreSimilarity(studentText, passage) {
-  if (!studentText || !passage) return 0
+  // If no reference passage was provided, scoring is not applicable (open prompt)
+  if (!passage || !passage.trim()) return null
+  if (!studentText || !studentText.trim()) return 0
 
   const studentTokens = tokenize(studentText)
   if (studentTokens.length === 0) return 0

@@ -2,6 +2,24 @@ import React, { useState, useEffect, useRef } from 'react'
 import { saveResponse } from '../../utils/db'
 
 function ScoreBadge({ score }) {
+  if (score === null || score === undefined) {
+    return (
+      <span
+        style={{
+          display: 'inline-block',
+          background: '#607d8b',
+          color: '#fff',
+          borderRadius: 4,
+          padding: '0.15rem 0.55rem',
+          fontSize: '0.8rem',
+          fontWeight: 600,
+          marginLeft: '0.5rem',
+        }}
+      >
+        N/A (Open Prompt)
+      </span>
+    )
+  }
   const pct = Math.round(score * 100)
   let color = 'var(--color-success)'
   if (pct < 40) color = 'var(--color-warning)'
@@ -34,13 +52,15 @@ export default function Results({ submission, session, onReset, onNavigateToDash
 
   // 2. Make saving failures visible and handle StrictMode double-save
   async function performSave() {
+    if (hasSavedRef.current) return
+    hasSavedRef.current = true
     setSaveStatus('saving')
     setSaveErrorMessage(null)
     try {
       await saveResponse(submission)
       setSaveStatus('saved')
-      hasSavedRef.current = true
     } catch (err) {
+      hasSavedRef.current = false
       console.error('IndexedDB saveResponse error:', err)
       setSaveStatus('error')
       setSaveErrorMessage(err?.message || 'Storage quota exceeded or private browsing restriction.')
@@ -53,12 +73,14 @@ export default function Results({ submission, session, onReset, onNavigateToDash
     }
   }, [])
 
+  const hasPassage = Boolean(passage && passage.trim())
+
   function handleCopyWork() {
     const textLines = [
       `TruthGrid Student Response`,
       `Student: ${studentName}${studentNumber ? ` (#${studentNumber})` : ''}`,
       `Submitted: ${new Date(submittedAt).toLocaleString()}`,
-      `\n--- Reading Passage ---\n${passage}\n`,
+      ...(hasPassage ? [`\n--- Reading Passage ---\n${passage}\n`] : []),
       `--- Student Response ---`,
       ...points.map(
         (p, i) =>
@@ -71,10 +93,14 @@ export default function Results({ submission, session, onReset, onNavigateToDash
     })
   }
 
+  const validScores = similarityScores
+    .map(s => s.exampleScore)
+    .filter(s => s !== null && s !== undefined)
+
   const avgScore =
-    similarityScores.length > 0
-      ? similarityScores.reduce((sum, s) => sum + (s.exampleScore || 0), 0) / similarityScores.length
-      : 0
+    validScores.length > 0
+      ? validScores.reduce((sum, s) => sum + s, 0) / validScores.length
+      : null
 
   return (
     <div className="page results-page">
@@ -90,7 +116,14 @@ export default function Results({ submission, session, onReset, onNavigateToDash
       <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
         <div>
           <h1>{saveStatus === 'error' ? 'Submission Incomplete' : 'Response Submitted'}</h1>
-          <p className="muted">{studentName}{studentNumber ? ` · #${studentNumber}` : ''}</p>
+          <p className="muted">
+            {studentName}{studentNumber ? ` · #${studentNumber}` : ''}
+            {!hasPassage && (
+              <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', background: '#eceff1', color: '#455a64', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 600 }}>
+                Open Prompt
+              </span>
+            )}
+          </p>
           <p className="muted" style={{ fontSize: '0.85rem' }}>{new Date(submittedAt).toLocaleString()}</p>
         </div>
 
@@ -150,17 +183,26 @@ export default function Results({ submission, session, onReset, onNavigateToDash
         </div>
       )}
 
-      {/* Similarity notice — always framed as a flag for the teacher, never a grade */}
-      <div className="card" style={{ borderLeft: '4px solid var(--color-accent)' }}>
-        <h3>Text Engagement Indicator</h3>
-        <p className="muted" style={{ marginTop: '0.3rem', fontSize: '0.9rem' }}>
-          This score measures how closely the student's examples connect to the reading passage using asymmetric lexical containment.
-          It is a flag for teacher review — <strong>not a grade or verdict</strong>.
-        </p>
-        <p style={{ marginTop: '0.6rem', fontSize: '1.1rem' }}>
-          Overall Engagement: <ScoreBadge score={avgScore} />
-        </p>
-      </div>
+      {/* Text engagement indicator (or open prompt note) */}
+      {hasPassage ? (
+        <div className="card" style={{ borderLeft: '4px solid var(--color-accent)' }}>
+          <h3>Text Engagement Indicator</h3>
+          <p className="muted" style={{ marginTop: '0.3rem', fontSize: '0.9rem' }}>
+            This score measures how closely the student's examples connect to the reading passage using asymmetric lexical containment.
+            It is a flag for teacher review — <strong>not a grade or verdict</strong>.
+          </p>
+          <p style={{ marginTop: '0.6rem', fontSize: '1.1rem' }}>
+            Overall Engagement: <ScoreBadge score={avgScore} />
+          </p>
+        </div>
+      ) : (
+        <div className="card" style={{ borderLeft: '4px solid #607d8b' }}>
+          <h3>Open Writing Response</h3>
+          <p className="muted" style={{ marginTop: '0.3rem', fontSize: '0.9rem' }}>
+            No reference passage was assigned for this prompt. Text engagement indicator is not applicable.
+          </p>
+        </div>
+      )}
 
       {/* Per-point breakdown */}
       {points.map((p, i) => (
@@ -168,7 +210,7 @@ export default function Results({ submission, session, onReset, onNavigateToDash
           {/* Fix configurable labels invariant: use labels.point instead of hardcoded 'Point' */}
           <h2 style={{ color: 'var(--color-accent)', marginBottom: '0.75rem' }}>
             {labels.point} {i + 1}
-            <ScoreBadge score={similarityScores[i]?.exampleScore || 0} />
+            {hasPassage && <ScoreBadge score={similarityScores[i]?.exampleScore} />}
           </h2>
 
           <div style={{ marginBottom: '0.75rem' }}>

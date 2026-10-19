@@ -156,6 +156,11 @@ export default function StudentFlow({ session, onSubmit }) {
           <h1>Literary Analysis</h1>
           <p className="muted">
             {studentName} {studentNumber ? `(#${studentNumber})` : ''} · {numPoints === 1 ? 'Short-Form Response' : '3-Point Response'}
+            {!(passage && passage.trim()) && (
+              <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', background: '#eceff1', color: '#455a64', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 600 }}>
+                Open Prompt Mode
+              </span>
+            )}
           </p>
         </div>
 
@@ -176,19 +181,21 @@ export default function StudentFlow({ session, onSubmit }) {
         )}
       </div>
 
-      {/* Reading passage */}
-      <div className="card">
-        <div
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-          onClick={() => setPassageExpanded(v => !v)}
-        >
-          <h3>Reading Passage</h3>
-          <span className="muted" style={{ fontSize: '0.85rem' }}>{passageExpanded ? 'Hide ▲' : 'Show ▼'}</span>
+      {/* Reading passage (only if reference passage was assigned) */}
+      {passage && passage.trim() ? (
+        <div className="card">
+          <div
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+            onClick={() => setPassageExpanded(v => !v)}
+          >
+            <h3>Reading Passage</h3>
+            <span className="muted" style={{ fontSize: '0.85rem' }}>{passageExpanded ? 'Hide ▲' : 'Show ▼'}</span>
+          </div>
+          {passageExpanded && (
+            <p style={{ marginTop: '0.75rem', whiteSpace: 'pre-wrap', lineHeight: '1.7' }}>{passage}</p>
+          )}
         </div>
-        {passageExpanded && (
-          <p style={{ marginTop: '0.75rem', whiteSpace: 'pre-wrap', lineHeight: '1.7' }}>{passage}</p>
-        )}
-      </div>
+      ) : null}
 
       {/* Structured points */}
       {points.map((p, i) => (

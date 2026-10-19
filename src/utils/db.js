@@ -19,7 +19,8 @@ async function getDb() {
 
 export async function saveResponse(submission) {
   const db = await getDb()
-  return db.add(STORE, { ...submission, id: undefined })
+  const { id: _id, ...response } = submission
+  return db.put(STORE, { ...response, id: submission.submittedAt })
 }
 
 export async function getAllResponses() {

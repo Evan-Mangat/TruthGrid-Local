@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 
 const TEACHER_CONFIG_KEY = 'truthgrid_teacher_config'
 
@@ -46,6 +46,11 @@ export default function TeacherSetup({
 
   const [showLabelEdit, setShowLabelEdit] = useState(false)
   const [errors, setErrors] = useState({})
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+  const [ocrConfirmation, setOcrConfirmation] = useState('')
+  const [isDraggingFile, setIsDraggingFile] = useState(false)
+  const fileInputRef = useRef(null)
 
   // Auto-persist teacher settings (passage, labels, mode) to localStorage
   useEffect(() => {
@@ -54,7 +59,6 @@ export default function TeacherSetup({
 
   function validate() {
     const e = {}
-    if (!passage.trim()) e.passage = 'Please paste in the reading passage.'
     if (!studentName.trim()) e.studentName = 'Student name is required.'
     return e
   }
@@ -81,6 +85,48 @@ export default function TeacherSetup({
 
   function updateLabel(key, value) {
     setLabels(prev => ({ ...prev, [key]: value }))
+  }
+
+  async function handlePassageFile(file) {
+    if (!file) return
+    setUploadError('')
+    setOcrConfirmation('')
+    const extension = file.name.split('.').pop()?.toLowerCase()
+
+    if (extension === 'txt' || extension === 'md') {
+      try {
+        setPassage(await file.text())
+        setOcrConfirmation(`Loaded text from ${file.name}.`)
+      } catch {
+        setUploadError('Could not read this text file.')
+      }
+      return
+    }
+
+    if (!['pdf', 'png', 'jpg', 'jpeg', 'tiff', 'tif'].includes(extension)) {
+      setUploadError('Choose a PDF, image, TXT, or Markdown file.')
+      return
+    }
+
+    setIsUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const response = await fetch('/api/ocr', { method: 'POST', body: formData })
+      const result = await response.json()
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Offline OCR could not process this file.')
+      }
+      setPassage(result.text || '')
+      setOcrConfirmation(
+        `Extracted via Offline OCR (${result.word_count} words, ${result.page_count} pages in ${result.elapsed_seconds}s). Review and edit the passage below.`
+      )
+    } catch (error) {
+      setUploadError(error.message || 'Offline OCR could not process this file.')
+    } finally {
+      setIsUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
   }
 
   return (
@@ -118,10 +164,44 @@ export default function TeacherSetup({
       </div>
 
       {/* Reading passage */}
-      <div className="card">
-        <label htmlFor="passage">Reading Passage</label>
+      <div
+        className="card"
+        onDragOver={event => { event.preventDefault(); setIsDraggingFile(true) }}
+        onDragLeave={event => {
+          if (!event.currentTarget.contains(event.relatedTarget)) setIsDraggingFile(false)
+        }}
+        onDrop={event => {
+          event.preventDefault()
+          setIsDraggingFile(false)
+          handlePassageFile(event.dataTransfer.files[0])
+        }}
+        style={isDraggingFile ? { outline: '2px dashed var(--color-accent)', outlineOffset: 2 } : undefined}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <label htmlFor="passage">Reading Passage <span className="muted">(optional)</span></label>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg,.tiff,.tif,.txt,.md"
+              onChange={event => handlePassageFile(event.target.files[0])}
+              style={{ display: 'none' }}
+            />
+            <button className="btn btn-secondary" type="button" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+              {isUploading ? 'Scanning locally…' : '📄 Upload / Scan Passage'}
+            </button>
+            <button
+              className="btn btn-secondary"
+              type="button"
+              onClick={() => { setPassage(''); setOcrConfirmation(''); setUploadError('') }}
+              disabled={!passage && !ocrConfirmation}
+            >
+              ✕ Clear Passage
+            </button>
+          </div>
+        </div>
         <p className="muted" style={{ marginBottom: '0.6rem' }}>
-          Paste the text students will write about. This stays saved on this computer for all students.
+          Paste a reference text, upload a document, or leave blank for an open prompt. Text files load directly; scanned PDF and image OCR runs locally during development. You can also drag a file here.
         </p>
         <textarea
           id="passage"
@@ -131,9 +211,10 @@ export default function TeacherSetup({
             setPassage(e.target.value)
             setErrors(v => ({ ...v, passage: null }))
           }}
-          placeholder="Paste your reading passage here…"
+          placeholder="Paste your reading passage here, or leave blank for an open prompt…"
         />
-        {errors.passage && <p className="error-msg">{errors.passage}</p>}
+        {ocrConfirmation && <p role="status" style={{ color: 'var(--color-success)', marginTop: '0.5rem', fontWeight: 600 }}>{ocrConfirmation}</p>}
+        {uploadError && <p role="alert" className="error-msg">{uploadError}</p>}
       </div>
 
       {/* 9. Response Format Mode (Short-form vs Standard) */}

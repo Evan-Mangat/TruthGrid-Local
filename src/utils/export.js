@@ -41,21 +41,26 @@ export function exportResponsesToCSV(responses) {
   const rows = responses.map(r => {
     const pts = r.points || []
     const scores = r.similarityScores || []
+    const hasPassage = Boolean(r.passage && r.passage.trim())
+
+    const validScores = scores
+      .map(s => s.exampleScore)
+      .filter(s => s !== null && s !== undefined)
 
     const avgScore =
-      scores.length > 0
+      hasPassage && validScores.length > 0
         ? Math.round(
-            (scores.reduce((sum, s) => sum + (s.exampleScore || 0), 0) / scores.length) * 100
+            (validScores.reduce((sum, s) => sum + s, 0) / validScores.length) * 100
           )
-        : 0
+        : 'N/A (Open Prompt)'
 
     const p1 = pts[0] || {}
     const p2 = pts[1] || {}
     const p3 = pts[2] || {}
 
-    const s1 = scores[0] ? Math.round((scores[0].exampleScore || 0) * 100) : ''
-    const s2 = scores[1] ? Math.round((scores[1].exampleScore || 0) * 100) : ''
-    const s3 = scores[2] ? Math.round((scores[2].exampleScore || 0) * 100) : ''
+    const s1 = hasPassage && scores[0]?.exampleScore !== undefined && scores[0]?.exampleScore !== null ? Math.round(scores[0].exampleScore * 100) : (hasPassage ? '' : 'N/A (Open Prompt)')
+    const s2 = hasPassage && scores[1]?.exampleScore !== undefined && scores[1]?.exampleScore !== null ? Math.round(scores[1].exampleScore * 100) : (hasPassage ? '' : 'N/A (Open Prompt)')
+    const s3 = hasPassage && scores[2]?.exampleScore !== undefined && scores[2]?.exampleScore !== null ? Math.round(scores[2].exampleScore * 100) : (hasPassage ? '' : 'N/A (Open Prompt)')
 
     const mode = r.mode === 'short' || pts.length === 1 ? 'Short-Form (1 Point)' : 'Standard (3 Points)'
 

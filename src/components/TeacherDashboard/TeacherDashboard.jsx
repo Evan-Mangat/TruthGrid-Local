@@ -3,6 +3,23 @@ import { getAllResponses, deleteResponse } from '../../utils/db'
 import { exportResponsesToCSV } from '../../utils/export'
 
 function ScoreBadge({ score }) {
+  if (score === null || score === undefined) {
+    return (
+      <span
+        style={{
+          display: 'inline-block',
+          background: '#607d8b',
+          color: '#fff',
+          borderRadius: 4,
+          padding: '0.15rem 0.5rem',
+          fontSize: '0.8rem',
+          fontWeight: 600,
+        }}
+      >
+        N/A (Open Prompt)
+      </span>
+    )
+  }
   const pct = Math.round(score * 100)
   let color = 'var(--color-success)'
   if (pct < 40) color = 'var(--color-warning)'
@@ -72,15 +89,17 @@ export default function TeacherDashboard({ onBack, onPrintBlankWorksheet, onPrin
     )
   })
 
-  // Class statistics
+  // Class statistics (only average submissions with a reference passage)
   const totalSubmissions = responses.length
   const allScores = responses.flatMap(r =>
-    (r.similarityScores || []).map(s => s.exampleScore || 0)
+    (r.similarityScores || [])
+      .map(s => s.exampleScore)
+      .filter(s => s !== null && s !== undefined)
   )
   const avgClassScore =
     allScores.length > 0
       ? Math.round((allScores.reduce((a, b) => a + b, 0) / allScores.length) * 100)
-      : 0
+      : null
 
   return (
     <div className="page dashboard-page">
@@ -131,8 +150,8 @@ export default function TeacherDashboard({ onBack, onPrintBlankWorksheet, onPrin
 
         <div className="card" style={{ marginBottom: 0 }}>
           <p className="muted" style={{ fontSize: '0.85rem' }}>Avg. Text Engagement</p>
-          <h2 style={{ fontSize: '1.8rem', color: avgClassScore >= 40 ? 'var(--color-success)' : 'var(--color-warning)', margin: '0.2rem 0' }}>
-            {avgClassScore}%
+          <h2 style={{ fontSize: '1.8rem', color: avgClassScore === null ? 'var(--color-text-muted)' : (avgClassScore >= 40 ? 'var(--color-success)' : 'var(--color-warning)'), margin: '0.2rem 0' }}>
+            {avgClassScore !== null ? `${avgClassScore}%` : 'N/A'}
           </h2>
           <p className="muted" style={{ fontSize: '0.8rem' }}>Example citation overlap</p>
         </div>
@@ -179,10 +198,13 @@ export default function TeacherDashboard({ onBack, onPrintBlankWorksheet, onPrin
             const isExpanded = expandedId === r.id
             const pts = r.points || []
             const scores = r.similarityScores || []
+            const validScores = scores
+              .map(s => s.exampleScore)
+              .filter(s => s !== null && s !== undefined)
             const avgScore =
-              scores.length > 0
-                ? scores.reduce((sum, s) => sum + (s.exampleScore || 0), 0) / scores.length
-                : 0
+              validScores.length > 0
+                ? validScores.reduce((sum, s) => sum + s, 0) / validScores.length
+                : null
             const labels = r.labels || { point: 'Point', example: 'Example', explanation: 'Explanation' }
 
             return (
@@ -252,7 +274,7 @@ export default function TeacherDashboard({ onBack, onPrintBlankWorksheet, onPrin
                             <strong style={{ color: 'var(--color-accent)' }}>
                               {labels.point} {idx + 1}
                             </strong>
-                            <ScoreBadge score={scores[idx]?.exampleScore || 0} />
+                            <ScoreBadge score={r.passage?.trim() ? scores[idx]?.exampleScore : null} />
                           </div>
                           <p style={{ fontSize: '0.9rem', marginBottom: '0.3rem' }}>
                             <strong>{labels.point}:</strong> {p.point}

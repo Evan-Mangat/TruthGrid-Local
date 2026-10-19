@@ -546,6 +546,11 @@ def main():
         help="Optional path to export results as a JSON report",
     )
     parser.add_argument(
+        "--json-stdout",
+        action="store_true",
+        help="Output raw JSON to stdout (for API and web integration)",
+    )
+    parser.add_argument(
         "--no-enhance",
         action="store_true",
         help="Skip image preprocessing (use raw scan)",
@@ -553,8 +558,8 @@ def main():
 
     args = parser.parse_args()
 
-    # Handle demo mode or missing args
-    if args.demo or not (args.input and args.key):
+    # Handle explicit demo mode or no input specified
+    if args.demo or not args.input:
         print("\n" + "#" * 70)
         print("  TRUTHGRID LOCAL — OFFLINE OCR PIPELINE DEMO (WEDNESDAY PREVIEW) ")
         print("#" * 70)
@@ -594,43 +599,98 @@ def main():
     # Standard Single-File Execution
     file_to_process = args.input
     threshold = args.threshold
-    if os.path.exists(args.key):
-        with open(args.key, "r", encoding="utf-8") as f:
-            answer_key = f.read()
-    else:
-        answer_key = args.key
 
-    # Execute Offline Pipeline
-    print(f"📖 Processing document: {os.path.basename(file_to_process)} (Offline OCR)...")
-    ocr_result = OfflineOCR.extract_text(
-        file_to_process, preprocess=not args.no_enhance
-    )
+    try:
+        ocr_result = OfflineOCR.extract_text(
+            file_to_process, preprocess=not args.no_enhance
+        )
+    except Exception as e:
+        if args.json_stdout:
+            print(json.dumps({"success": False, "error": str(e)}))
+            sys.exit(1)
+        else:
+            print(f"❌ OCR Extraction Error: {e}")
+            sys.exit(1)
 
-    print(f"🔍 Comparing against answer key using fuzzy token matching...")
-    grade_result = FuzzyGrader.grade(
-        extracted_text=ocr_result["full_text"],
-        answer_key=answer_key,
-        threshold=threshold,
-    )
-
-    # Render Report
-    ReportFormatter.render_cli(
-        file_path=file_to_process,
-        ocr_result=ocr_result,
-        grade_result=grade_result,
-        answer_key=answer_key,
-    )
-
-    if args.json:
-        export_payload = {
-            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "source_file": file_to_process,
-            "ocr": ocr_result,
-            "grading": grade_result,
+    # If called programmatically with --json-stdout (e.g. from Vite web app)
+    if args.json_stdout:
+        output_payload = {
+            "success": True,
+            "filename": os.path.basename(file_to_process),
+            "text": ocr_result["full_text"],
+            "page_count": ocr_result["page_count"],
+            "elapsed_seconds": ocr_result["elapsed_seconds"],
+            "word_count": len(ocr_result["full_text"].split()),
         }
-        with open(args.json, "w", encoding="utf-8") as f:
-            json.dump(export_payload, f, indent=2)
-        print(f"💾 Report saved to {args.json}\n")
+        print(json.dumps(output_payload))
+        return
+
+    # Case A: Answer key provided -> Perform comparison & grading
+    if args.key:
+        print(f"📖 Processing document: {os.path.basename(file_to_process)} (Offline OCR)...")
+        if os.path.exists(args.key):
+            with open(args.key, "r", encoding="utf-8") as f:
+                answer_key = f.read()
+        else:
+            answer_key = args.key
+
+        print(f"🔍 Comparing against answer key using fuzzy token matching...")
+        grade_result = FuzzyGrader.grade(
+            extracted_text=ocr_result["full_text"],
+            answer_key=answer_key,
+            threshold=threshold,
+        )
+
+        ReportFormatter.render_cli(
+            file_path=file_to_process,
+            ocr_result=ocr_result,
+            grade_result=grade_result,
+            answer_key=answer_key,
+        )
+
+        if args.json:
+            export_payload = {
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "source_file": file_to_process,
+                "ocr": ocr_result,
+                "grading": grade_result,
+            }
+            with open(args.json, "w", encoding="utf-8") as f:
+                json.dump(export_payload, f, indent=2)
+            print(f"💾 Report saved to {args.json}\n")
+
+    # Case B: No answer key provided -> Pure OCR text extraction report
+    else:
+        word_count = len(ocr_result["full_text"].split())
+        line_count = len(ocr_result["full_text"].splitlines())
+
+        print("\n" + "=" * 70)
+        print("          TRUTHGRID LOCAL — OFFLINE OCR TEXT EXTRACTION          ")
+        print("=" * 70)
+        print(f" Source Document : {os.path.basename(file_to_process)}")
+        print(f" Pages Scanned   : {ocr_result['page_count']}")
+        print(f" Word Count      : {word_count} words ({line_count} lines)")
+        print(f" Processing Time : {ocr_result['elapsed_seconds']}s (100% On-Device / Zero Cloud)")
+        print("-" * 70)
+        print(" [EXTRACTED PASSAGE / WORK TEXT]")
+        print("-" * 70)
+        if ocr_result["full_text"]:
+            for line in ocr_result["full_text"].splitlines():
+                print(f"   {line}")
+        else:
+            print("   (No text detected in scan)")
+        print("=" * 70 + "\n")
+
+        if args.json:
+            export_payload = {
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "source_file": file_to_process,
+                "ocr": ocr_result,
+                "word_count": word_count,
+            }
+            with open(args.json, "w", encoding="utf-8") as f:
+                json.dump(export_payload, f, indent=2)
+            print(f"💾 Extraction saved to {args.json}\n")
 
 
 if __name__ == "__main__":
