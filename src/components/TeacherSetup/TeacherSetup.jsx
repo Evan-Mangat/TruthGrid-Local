@@ -98,13 +98,16 @@ export default function TeacherSetup({
         setPassage(await file.text())
         setOcrConfirmation(`Loaded text from ${file.name}.`)
       } catch {
-        setUploadError('Could not read this text file.')
+        setUploadError('Could not read this text file. Try saving it as UTF-8 plain text and uploading it again.')
+      } finally {
+        if (fileInputRef.current) fileInputRef.current.value = ''
       }
       return
     }
 
     if (!['pdf', 'png', 'jpg', 'jpeg', 'tiff', 'tif'].includes(extension)) {
       setUploadError('Choose a PDF, image, TXT, or Markdown file.')
+      if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
 
@@ -122,7 +125,11 @@ export default function TeacherSetup({
         `Extracted via Offline OCR (${result.word_count} words, ${result.page_count} pages in ${result.elapsed_seconds}s). Review and edit the passage below.`
       )
     } catch (error) {
-      setUploadError(error.message || 'Offline OCR could not process this file.')
+      setUploadError(
+        error instanceof TypeError
+          ? 'Could not reach the local OCR service. Start the app with npm run dev and check that Python, Tesseract, and the OCR dependencies are installed.'
+          : error.message || 'Offline OCR could not process this file.'
+      )
     } finally {
       setIsUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -214,7 +221,19 @@ export default function TeacherSetup({
           placeholder="Paste your reading passage here, or leave blank for an open prompt…"
         />
         {ocrConfirmation && <p role="status" style={{ color: 'var(--color-success)', marginTop: '0.5rem', fontWeight: 600 }}>{ocrConfirmation}</p>}
-        {uploadError && <p role="alert" className="error-msg">{uploadError}</p>}
+        {uploadError && (
+          <div
+            role="alert"
+            className="card"
+            style={{ marginTop: '0.75rem', marginBottom: 0, background: '#ffebee', borderColor: '#e57373', borderLeft: '5px solid #c62828' }}
+          >
+            <strong style={{ color: '#b71c1c' }}>Passage upload or scan failed</strong>
+            <p style={{ color: '#b71c1c', marginTop: '0.25rem' }}>{uploadError}</p>
+            <p className="muted" style={{ marginTop: '0.25rem' }}>
+              You can still paste or edit the passage directly in the text box, or choose another supported file.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* 9. Response Format Mode (Short-form vs Standard) */}

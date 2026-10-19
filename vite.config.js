@@ -87,11 +87,16 @@ function offlineOcrPlugin() {
               })
               child.on('close', code => {
                 clearTimeout(timeout)
-                if (code !== 0) return reject(new Error(stderr.trim() || 'Offline OCR could not process this file.'))
                 try {
-                  resolve(JSON.parse(stdout))
+                  const payload = JSON.parse(stdout)
+                  if (code !== 0 || !payload.success) {
+                    const message = (payload.error || 'Offline OCR could not process this file.')
+                      .replaceAll(inputPath, upload.filename)
+                    return reject(new Error(message))
+                  }
+                  resolve(payload)
                 } catch {
-                  reject(new Error('Offline OCR returned an invalid response.'))
+                  reject(new Error(code !== 0 ? 'Offline OCR could not process this file. Check that the document is valid and the required local OCR tools are installed.' : 'Offline OCR returned an invalid response.'))
                 }
               })
             })
