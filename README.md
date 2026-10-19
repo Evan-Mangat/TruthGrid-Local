@@ -10,6 +10,14 @@ After the first successful install and cache, the writing app shell and local re
 
 This project does not provide an `.exe` because school-managed devices commonly require review and approval before executable software can be installed. The PWA distribution avoids asking students to install an unapproved executable; the school or district should still review and approve the hosted app and its student-data practices. This is a deployment choice, not a claim of legal compliance.
 
+## Shared-device teacher dashboard
+
+Before students use a shared device, the teacher should create a dashboard passcode in **Teacher Dashboard Access** on the setup screen. Students can then enter and submit work locally; opening the dashboard from setup or results requires the teacher passcode. The verifier is stored locally using a random salt and PBKDF2; the passcode itself is not stored.
+
+This is a prototype convenience barrier, not strong authentication. A person who can inspect or modify the browser app or control the device may bypass it or access the local browser data. Do not describe it as tamper-proof security. There is no email or SMS recovery. **Forgot passcode?** requires typing `ERASE`, then permanently deletes all locally saved responses/scans and the active draft before removing the passcode. Keep a separately protected export if the school requires a recoverable record.
+
+Publishing the static app to GitHub Pages does not by itself establish compliance with Canadian or provincial student privacy requirements. Browser-stored responses remain on the device/profile where students submit them, while the public Pages host serves the application files. The school/district privacy lead should review the data collected, device/profile access, retention, exports, hosting approval, and applicable policies before classroom use. This project makes no legal-compliance certification.
+
 ## Run the app
 
 ```bash

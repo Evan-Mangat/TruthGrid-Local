@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { hasTeacherPasscode, setTeacherPasscode, verifyTeacherPasscode } from '../../utils/teacherAccess'
 
 const TEACHER_CONFIG_KEY = 'truthgrid_teacher_config'
 
@@ -51,6 +52,14 @@ export default function TeacherSetup({
   const [uploadError, setUploadError] = useState('')
   const [ocrConfirmation, setOcrConfirmation] = useState('')
   const [isDraggingFile, setIsDraggingFile] = useState(false)
+  const [accessConfigured, setAccessConfigured] = useState(hasTeacherPasscode())
+  const [showAccessSetup, setShowAccessSetup] = useState(!hasTeacherPasscode())
+  const [currentTeacherPasscode, setCurrentTeacherPasscode] = useState('')
+  const [newTeacherPasscode, setNewTeacherPasscode] = useState('')
+  const [confirmTeacherPasscode, setConfirmTeacherPasscode] = useState('')
+  const [accessError, setAccessError] = useState('')
+  const [accessMessage, setAccessMessage] = useState('')
+  const [isSavingPasscode, setIsSavingPasscode] = useState(false)
   const fileInputRef = useRef(null)
 
   // Auto-persist teacher settings (passage, labels, mode) to localStorage
@@ -87,6 +96,39 @@ export default function TeacherSetup({
 
   function updateLabel(key, value) {
     setLabels(prev => ({ ...prev, [key]: value }))
+  }
+
+  async function handleSaveTeacherPasscode(event) {
+    event.preventDefault()
+    setAccessError('')
+    setAccessMessage('')
+    if (newTeacherPasscode.length < 6) {
+      setAccessError('Use at least 6 characters for the dashboard passcode.')
+      return
+    }
+    if (newTeacherPasscode !== confirmTeacherPasscode) {
+      setAccessError('The new passcodes do not match.')
+      return
+    }
+
+    setIsSavingPasscode(true)
+    try {
+      if (accessConfigured && !(await verifyTeacherPasscode(currentTeacherPasscode))) {
+        setAccessError('The current teacher passcode did not match.')
+        return
+      }
+      await setTeacherPasscode(newTeacherPasscode)
+      setAccessConfigured(true)
+      setShowAccessSetup(false)
+      setCurrentTeacherPasscode('')
+      setNewTeacherPasscode('')
+      setConfirmTeacherPasscode('')
+      setAccessMessage('Teacher dashboard passcode saved on this device.')
+    } catch (error) {
+      setAccessError(error.message || 'Could not save the teacher passcode.')
+    } finally {
+      setIsSavingPasscode(false)
+    }
   }
 
   async function handlePassageFile(file) {
@@ -177,6 +219,42 @@ export default function TeacherSetup({
           )}
         </div>
       </div>
+
+      <section className="card" aria-labelledby="teacher-access-setup-heading">
+        <h2 id="teacher-access-setup-heading">Teacher Dashboard Access</h2>
+        <p className="muted" style={{ marginBottom: '0.75rem' }}>
+          Set this before students use the shared device. It blocks casual dashboard access, but is not strong security against someone who can inspect or change the browser app. Forgetting the code requires erasing saved responses to reset it.
+        </p>
+        {accessConfigured && !showAccessSetup ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <strong style={{ color: 'var(--color-success)' }}>Passcode set on this device</strong>
+            <button className="btn btn-secondary" type="button" onClick={() => { setShowAccessSetup(true); setAccessMessage(''); setAccessError('') }}>Change passcode</button>
+          </div>
+        ) : (
+          <form onSubmit={handleSaveTeacherPasscode} style={{ display: 'grid', gap: '0.75rem' }}>
+            {accessConfigured && (
+              <div>
+                <label htmlFor="current-teacher-passcode">Current passcode</label>
+                <input id="current-teacher-passcode" type="password" autoComplete="current-password" value={currentTeacherPasscode} onChange={event => setCurrentTeacherPasscode(event.target.value)} />
+              </div>
+            )}
+            <div>
+              <label htmlFor="new-teacher-passcode">{accessConfigured ? 'New passcode' : 'Create teacher passcode'}</label>
+              <input id="new-teacher-passcode" type="password" autoComplete="new-password" minLength={6} value={newTeacherPasscode} onChange={event => setNewTeacherPasscode(event.target.value)} />
+            </div>
+            <div>
+              <label htmlFor="confirm-teacher-passcode">Confirm passcode</label>
+              <input id="confirm-teacher-passcode" type="password" autoComplete="new-password" value={confirmTeacherPasscode} onChange={event => setConfirmTeacherPasscode(event.target.value)} />
+            </div>
+            {accessError && <p className="error-msg" role="alert">{accessError}</p>}
+            {accessMessage && <p role="status" style={{ color: 'var(--color-success)' }}>{accessMessage}</p>}
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button className="btn btn-primary" type="submit" disabled={isSavingPasscode}>{isSavingPasscode ? 'Saving…' : 'Save dashboard passcode'}</button>
+              {accessConfigured && <button className="btn btn-secondary" type="button" onClick={() => { setShowAccessSetup(false); setAccessError('') }}>Cancel</button>}
+            </div>
+          </form>
+        )}
+      </section>
 
       {/* Reading passage */}
       <div

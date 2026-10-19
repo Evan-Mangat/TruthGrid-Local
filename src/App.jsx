@@ -4,6 +4,7 @@ import StudentFlow, { clearActiveDraft } from './components/StudentFlow/StudentF
 import Results from './components/Results/Results'
 import TeacherDashboard from './components/TeacherDashboard/TeacherDashboard'
 import PrintWorksheet from './components/PrintWorksheet/PrintWorksheet'
+import TeacherAccess from './components/TeacherAccess/TeacherAccess'
 
 // Top-level app state machine:
 // 'setup' | 'writing' | 'results' | 'dashboard' | 'print_worksheet'
@@ -57,7 +58,7 @@ export default function App() {
 
   function handleOpenDashboard(returnScreen) {
     setDashboardReturnScreen(returnScreen)
-    setScreen('dashboard')
+    setScreen('dashboard_access')
   }
 
   function handlePrintBlankWorksheet(config) {
@@ -69,6 +70,14 @@ export default function App() {
     setSubmission(resp)
     setSubmissionIsStored(true)
     setScreen('results')
+  }
+
+  function handleTeacherRecovery() {
+    clearActiveDraft()
+    setSubmission(null)
+    setSubmissionIsStored(false)
+    setSession(null)
+    setScreen('setup')
   }
 
   return (
@@ -101,6 +110,14 @@ export default function App() {
           onBack={() => setScreen(dashboardReturnScreen)}
           onPrintBlankWorksheet={() => handlePrintBlankWorksheet(teacherConfig)}
           onPrintStudentResponse={handlePrintStudentResponse}
+        />
+      )}
+
+      {screen === 'dashboard_access' && (
+        <TeacherAccess
+          onUnlock={() => setScreen('dashboard')}
+          onCancel={() => setScreen(dashboardReturnScreen)}
+          onRecoveryComplete={handleTeacherRecovery}
         />
       )}
 

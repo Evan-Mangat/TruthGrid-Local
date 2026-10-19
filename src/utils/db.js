@@ -32,3 +32,8 @@ export async function deleteResponse(id) {
   const db = await getDb()
   return db.delete(STORE, id)
 }
+
+export async function clearAllResponses() {
+  const db = await getDb()
+  return db.clear(STORE)
+}
