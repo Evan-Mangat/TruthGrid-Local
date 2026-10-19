@@ -1,0 +1,90 @@
+{
+  "timestamp": "2026-10-19T07:21:20Z",
+  "demo_cases": [
+    {
+      "case": "passing",
+      "file": "sample_data/sample_student_work.pdf",
+      "ocr": {
+        "full_text": "Literary Analysis Response - Student: Alex Morgan (Grade 11)\n\n\u2018Question: Analyze the symbolism of the green light in The Great Gatsby.\n\nPoint:\nIn The Great Gatsby, the green light at the end of Dalsy Buchanan's dock\nsymbolizes Jay Gatsby's hopes and unattainable dreams for the future,\n\nExample:\nFitzgerald concludes the novel with the reflecto\nagainst the current, bore back ceaselessly into the past\n\n\"So we beat on, boats\n\nExplanation:\n\u2018This illustrates how the past cannot simply be repeated, exposing the\ntragic illusion of the American Dream.",
+        "page_count": 1,
+        "per_page": [
+          "Literary Analysis Response - Student: Alex Morgan (Grade 11)\n\n\u2018Question: Analyze the symbolism of the green light in The Great Gatsby.\n\nPoint:\nIn The Great Gatsby, the green light at the end of Dalsy Buchanan's dock\nsymbolizes Jay Gatsby's hopes and unattainable dreams for the future,\n\nExample:\nFitzgerald concludes the novel with the reflecto\nagainst the current, bore back ceaselessly into the past\n\n\"So we beat on, boats\n\nExplanation:\n\u2018This illustrates how the past cannot simply be repeated, exposing the\ntragic illusion of the American Dream."
+        ],
+        "elapsed_seconds": 0.377
+      },
+      "grade": {
+        "similarity_score": 93,
+        "token_set_score": 93,
+        "token_sort_score": 79,
+        "partial_score": 71,
+        "threshold": 80,
+        "verdict": "PASS",
+        "status": "PASS / CORRECT",
+        "badge": "\ud83d\udfe2",
+        "concept_analysis": {
+          "total_concepts": 3,
+          "matched_count": 2,
+          "containment_rate": 66.7,
+          "matched_concepts": [
+            {
+              "concept": "In The Great Gatsby, the green light at the end of Daisy Buchanan's dock symbolizes Jay Gatsby's hopes and unattainable dreams for the future",
+              "score": 99
+            },
+            {
+              "concept": "' This exposes the tragic illusion of the American Dream",
+              "score": 86
+            }
+          ],
+          "missing_concepts": [
+            {
+              "concept": "Fitzgerald illustrates how the past cannot simply be repeated, ending with the famous line: 'So we beat on, boats against the current, borne back ceaselessly into the past",
+              "score": 59
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "partial",
+      "file": "sample_data/sample_student_partial.pdf",
+      "ocr": {
+        "full_text": "Literary Analysis Response - Student: Jordan Lee (Grade 11)\n\n\u2018Question: Analyze the symbolism of the green light in The Great Gatsby.\n\nPoint:\n\u2018The green light represents Gatsby's desire for money and big parties.\n\nExample:\nHe stands outside in the dark looking across the water at the light.\n\nExplanation:\nHe wants to be rich so people like him and come to his mansion.",
+        "page_count": 1,
+        "per_page": [
+          "Literary Analysis Response - Student: Jordan Lee (Grade 11)\n\n\u2018Question: Analyze the symbolism of the green light in The Great Gatsby.\n\nPoint:\n\u2018The green light represents Gatsby's desire for money and big parties.\n\nExample:\nHe stands outside in the dark looking across the water at the light.\n\nExplanation:\nHe wants to be rich so people like him and come to his mansion."
+        ],
+        "elapsed_seconds": 0.276
+      },
+      "grade": {
+        "similarity_score": 53,
+        "token_set_score": 53,
+        "token_sort_score": 51,
+        "partial_score": 42,
+        "threshold": 80,
+        "verdict": "FLAG",
+        "status": "FLAGGED / INCORRECT",
+        "badge": "\ud83d\udd34",
+        "concept_analysis": {
+          "total_concepts": 3,
+          "matched_count": 0,
+          "containment_rate": 0.0,
+          "matched_concepts": [],
+          "missing_concepts": [
+            {
+              "concept": "In The Great Gatsby, the green light at the end of Daisy Buchanan's dock symbolizes Jay Gatsby's hopes and unattainable dreams for the future",
+              "score": 54
+            },
+            {
+              "concept": "Fitzgerald illustrates how the past cannot simply be repeated, ending with the famous line: 'So we beat on, boats against the current, borne back ceaselessly into the past",
+              "score": 44
+            },
+            {
+              "concept": "' This exposes the tragic illusion of the American Dream",
+              "score": 52
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
