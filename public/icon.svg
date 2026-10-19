@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="96" fill="#1a1a2e"/>
+  <rect x="40" y="40" width="432" height="432" rx="72" fill="none" stroke="#e94560" stroke-width="16"/>
+  <!-- Central spine -->
+  <line x1="256" y1="150" x2="256" y2="360" stroke="#ffffff" stroke-width="12" stroke-linecap="round"/>
+  <!-- Analysis structure lines -->
+  <rect x="120" y="170" width="110" height="22" rx="11" fill="#4f8cff"/>
+  <rect x="282" y="170" width="110" height="22" rx="11" fill="#4f8cff"/>
+
+  <rect x="120" y="235" width="110" height="22" rx="11" fill="#0f9d58"/>
+  <rect x="282" y="235" width="110" height="22" rx="11" fill="#0f9d58"/>
+
+  <rect x="120" y="300" width="110" height="22" rx="11" fill="#e94560"/>
+  <rect x="282" y="300" width="110" height="22" rx="11" fill="#e94560"/>
+</svg>

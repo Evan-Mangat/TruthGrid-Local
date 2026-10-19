@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { saveResponse } from '../../utils/db'
 
 function ScoreBadge({ score }) {
@@ -7,74 +7,195 @@ function ScoreBadge({ score }) {
   if (pct < 40) color = 'var(--color-warning)'
   if (pct < 20) color = '#c62828'
   return (
-    <span style={{
-      display: 'inline-block',
-      background: color,
-      color: '#fff',
-      borderRadius: 4,
-      padding: '0.1rem 0.5rem',
-      fontSize: '0.8rem',
-      fontWeight: 700,
-      marginLeft: '0.5rem',
-    }}>
+    <span
+      style={{
+        display: 'inline-block',
+        background: color,
+        color: '#fff',
+        borderRadius: 4,
+        padding: '0.15rem 0.55rem',
+        fontSize: '0.8rem',
+        fontWeight: 700,
+        marginLeft: '0.5rem',
+      }}
+    >
       {pct}% text engagement
     </span>
   )
 }
 
-export default function Results({ submission, session, onReset }) {
-  const { points, similarityScores, labels, studentName, studentNumber, submittedAt } = submission
+export default function Results({ submission, session, onReset, onNavigateToDashboard }) {
+  const { points, similarityScores, labels, studentName, studentNumber, submittedAt, passage } = submission
 
-  React.useEffect(() => {
-    saveResponse(submission).catch(console.error)
+  const [saveStatus, setSaveStatus] = useState('saving') // 'saving' | 'saved' | 'error'
+  const [saveErrorMessage, setSaveErrorMessage] = useState(null)
+  const [copied, setCopied] = useState(false)
+  const hasSavedRef = useRef(false)
+
+  // 2. Make saving failures visible and handle StrictMode double-save
+  async function performSave() {
+    setSaveStatus('saving')
+    setSaveErrorMessage(null)
+    try {
+      await saveResponse(submission)
+      setSaveStatus('saved')
+      hasSavedRef.current = true
+    } catch (err) {
+      console.error('IndexedDB saveResponse error:', err)
+      setSaveStatus('error')
+      setSaveErrorMessage(err?.message || 'Storage quota exceeded or private browsing restriction.')
+    }
+  }
+
+  useEffect(() => {
+    if (!hasSavedRef.current) {
+      performSave()
+    }
   }, [])
 
-  const avgScore = similarityScores.reduce((sum, s) => sum + s.exampleScore, 0) / similarityScores.length
+  function handleCopyWork() {
+    const textLines = [
+      `TruthGrid Student Response`,
+      `Student: ${studentName}${studentNumber ? ` (#${studentNumber})` : ''}`,
+      `Submitted: ${new Date(submittedAt).toLocaleString()}`,
+      `\n--- Reading Passage ---\n${passage}\n`,
+      `--- Student Response ---`,
+      ...points.map(
+        (p, i) =>
+          `\n${labels.point} ${i + 1}:\n${p.point}\n${labels.example} ${i + 1}:\n${p.example}\n${labels.explanation} ${i + 1}:\n${p.explanation}`
+      ),
+    ]
+    navigator.clipboard.writeText(textLines.join('\n')).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 3000)
+    })
+  }
+
+  const avgScore =
+    similarityScores.length > 0
+      ? similarityScores.reduce((sum, s) => sum + (s.exampleScore || 0), 0) / similarityScores.length
+      : 0
 
   return (
-    <div className="page">
-      <h1>Response Submitted</h1>
-      <p className="muted" style={{ marginBottom: '0.25rem' }}>{studentName}{studentNumber ? ` · #${studentNumber}` : ''}</p>
-      <p className="muted" style={{ marginBottom: '1.5rem' }}>{new Date(submittedAt).toLocaleString()}</p>
+    <div className="page results-page">
+      {/* Printable Header (Visible only when printed) */}
+      <div className="print-only" style={{ marginBottom: '1.5rem', borderBottom: '2px solid #000', paddingBottom: '0.75rem' }}>
+        <h1 style={{ fontSize: '1.6rem', marginBottom: '0.2rem' }}>TruthGrid Literary Analysis Response</h1>
+        <p style={{ fontSize: '0.95rem' }}>
+          <strong>Student:</strong> {studentName} {studentNumber ? `(#${studentNumber})` : ''} &nbsp;|&nbsp;{' '}
+          <strong>Date:</strong> {new Date(submittedAt).toLocaleString()}
+        </p>
+      </div>
+
+      <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
+        <div>
+          <h1>{saveStatus === 'error' ? 'Submission Incomplete' : 'Response Submitted'}</h1>
+          <p className="muted">{studentName}{studentNumber ? ` · #${studentNumber}` : ''}</p>
+          <p className="muted" style={{ fontSize: '0.85rem' }}>{new Date(submittedAt).toLocaleString()}</p>
+        </div>
+
+        {/* Action buttons for print / dashboard */}
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn btn-secondary" onClick={() => window.print()} title="Print this student's response">
+            🖨️ Print Response
+          </button>
+          {onNavigateToDashboard && (
+            <button className="btn btn-secondary" onClick={onNavigateToDashboard}>
+              Teacher Dashboard
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 2. Visible Save Status Banner */}
+      {saveStatus === 'saving' && (
+        <div className="card no-print" style={{ background: '#e3f2fd', borderColor: '#90caf9' }}>
+          <p style={{ color: '#1565c0', fontWeight: 600 }}>
+            ⏳ Saving response to local device storage...
+          </p>
+        </div>
+      )}
+
+      {saveStatus === 'error' && (
+        <div
+          className="card no-print"
+          style={{
+            background: '#ffebee',
+            borderColor: '#e57373',
+            borderLeft: '5px solid #c62828',
+            marginBottom: '1.5rem',
+          }}
+        >
+          <h3 style={{ color: '#c62828', marginBottom: '0.3rem' }}>
+            ⚠️ Storage Warning: Work Not Saved Locally
+          </h3>
+          <p style={{ color: '#b71c1c', fontSize: '0.95rem', marginBottom: '0.8rem' }}>
+            The app could not write this response to the computer's local IndexedDB database ({saveErrorMessage}).
+            <strong> Do not close this window!</strong> Please notify your teacher or copy your work now.
+          </p>
+          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <button className="btn btn-primary" onClick={performSave}>
+              🔄 Retry Saving
+            </button>
+            <button className="btn btn-secondary" onClick={handleCopyWork}>
+              {copied ? '✓ Copied to Clipboard!' : '📋 Copy Work to Clipboard'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {saveStatus === 'saved' && (
+        <div className="no-print" style={{ marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--color-success)', fontWeight: 500 }}>
+          ✓ Response saved securely to local device storage.
+        </div>
+      )}
 
       {/* Similarity notice — always framed as a flag for the teacher, never a grade */}
       <div className="card" style={{ borderLeft: '4px solid var(--color-accent)' }}>
         <h3>Text Engagement Indicator</h3>
-        <p className="muted" style={{ marginTop: '0.3rem' }}>
-          This score measures how closely the student's examples connect to the reading passage.
-          It is a flag for teacher review — not a grade or verdict.
+        <p className="muted" style={{ marginTop: '0.3rem', fontSize: '0.9rem' }}>
+          This score measures how closely the student's examples connect to the reading passage using asymmetric lexical containment.
+          It is a flag for teacher review — <strong>not a grade or verdict</strong>.
         </p>
         <p style={{ marginTop: '0.6rem', fontSize: '1.1rem' }}>
-          Overall: <ScoreBadge score={avgScore} />
+          Overall Engagement: <ScoreBadge score={avgScore} />
         </p>
       </div>
 
       {/* Per-point breakdown */}
       {points.map((p, i) => (
         <div className="card" key={i}>
+          {/* Fix configurable labels invariant: use labels.point instead of hardcoded 'Point' */}
           <h2 style={{ color: 'var(--color-accent)', marginBottom: '0.75rem' }}>
-            Point {i + 1}
-            <ScoreBadge score={similarityScores[i].exampleScore} />
+            {labels.point} {i + 1}
+            <ScoreBadge score={similarityScores[i]?.exampleScore || 0} />
           </h2>
 
           <div style={{ marginBottom: '0.75rem' }}>
             <strong>{labels.point}:</strong>
-            <p style={{ marginTop: '0.2rem' }}>{p.point}</p>
+            <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{p.point}</p>
           </div>
           <div style={{ marginBottom: '0.75rem' }}>
             <strong>{labels.example}:</strong>
-            <p style={{ marginTop: '0.2rem', fontStyle: 'italic' }}>{p.example}</p>
+            <p style={{ marginTop: '0.2rem', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>{p.example}</p>
           </div>
           <div>
             <strong>{labels.explanation}:</strong>
-            <p style={{ marginTop: '0.2rem' }}>{p.explanation}</p>
+            <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{p.explanation}</p>
           </div>
         </div>
       ))}
 
-      <button className="btn btn-secondary" style={{ width: '100%' }} onClick={onReset}>
-        New Student Session
-      </button>
+      {/* Printable Teacher Feedback Box */}
+      <div className="print-only" style={{ marginTop: '2rem', border: '1px solid #000', padding: '1rem', minHeight: '120px' }}>
+        <strong>Teacher Feedback & Notes:</strong>
+      </div>
+
+      <div className="no-print" style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <button className="btn btn-secondary" style={{ width: '100%', padding: '0.75rem' }} onClick={onReset}>
+          Next Student Session (Reset Device)
+        </button>
+      </div>
     </div>
   )
 }

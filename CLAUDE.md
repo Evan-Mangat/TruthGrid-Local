@@ -91,13 +91,13 @@ Opens at `http://localhost:5173`. The `.claude/launch.json` is configured for th
 
 These are in rough priority order. Check them off as they're completed.
 
-- [ ] **CSV export** — teacher button to download all stored responses as a CSV file. Use `getAllResponses()` from `db.js`, serialize to CSV in the browser, trigger a download via a `<a>` blob URL. Add this to a teacher-facing screen (not visible to students during a session).
-- [ ] **Printable view** — `@media print` stylesheet so teachers can print the student's response (or a blank worksheet). A blank print mode (no student data, just the passage + labeled fields) would let teachers run off paper copies.
-- [ ] **Teacher dashboard** — a screen (accessible after a session, or from the setup screen) that lists all stored responses with student name, date, and overall engagement score. Should use `getAllResponses()` and allow clicking into a full response view.
-- [ ] **PWA icons** — `public/icon-192.png` and `public/icon-512.png` are referenced in `vite.config.js` but not yet created. **This is a blocker for offline reliability.** Without the icons, the service worker registration may not fully activate in some browsers, meaning the app won't be cached after first load. Add these before relying on offline mode in a classroom. Once icons exist and a student has loaded the app once on wifi, all subsequent uses work fully offline.
-- [ ] **Offline first-load resilience** — service worker is wired in via `vite-plugin-pwa` (autoUpdate mode). Test that the app works fully offline after one load, including the similarity scorer and IndexedDB writes.
-- [ ] **Short-form mode** — single-point (one P/E/E) option in addition to the default three-point mode. Teacher toggles this in the setup screen. Already partially supported by the data model — `NUM_POINTS` in `StudentFlow.jsx` controls the count.
-- [ ] **Electron wrapper** — for the Special Ed lockdown/offline mode. The same React app gets wrapped in an Electron shell with: kiosk mode, disabled keyboard shortcuts (Ctrl+T, Alt+F4, etc.), fullscreen forced, "complete" button only visible to teacher to unlock. This is a separate build target, not a separate app.
+- [x] **CSV export** — teacher button to download all stored responses as a CSV file. Implemented via `exportResponsesToCSV()` in `src/utils/export.js`, accessible from the Teacher Dashboard.
+- [x] **Printable view** — `@media print` stylesheet for student responses and blank worksheet printable component (`PrintWorksheet.jsx`) for running off classroom paper copies.
+- [x] **Teacher dashboard** — screen (`TeacherDashboard.jsx`) listing all stored IndexedDB responses with student name, date, search filtering, per-point detail expansion, CSV export, and print.
+- [x] **PWA icons** — created `public/icon-192.png`, `public/icon-512.png`, and `public/icon.svg`. Precaching verified in Vite PWA bundle.
+- [x] **Offline first-load resilience** — service worker configured with autoUpdate, precaches all 10 bundle assets including icons, manifest, and scripts for 100% offline usage.
+- [x] **Short-form mode** — single-point (one P/E/E) option in addition to default three-point mode, configurable in TeacherSetup.
+- [ ] **Electron wrapper** — deferred until strict kiosk lockdown or local filesystem access is explicitly required.
 
 ---
 
@@ -105,8 +105,8 @@ These are in rough priority order. Check them off as they're completed.
 
 - **Labels are always configurable** — never hardcode "Point", "Example", "Explanation" in user-facing strings. Always read from `session.labels`.
 - **Similarity scores are flags, not grades** — the UI always includes the disclaimer text. Never remove or soften it.
-- **No network calls** — the app must work on flaky school wifi. Nothing should phone home. The similarity scorer is written from scratch with no external NLP library — it uses TF-IDF cosine similarity entirely inline.
-- **Shared-device support** — "New Student Session" must always reset fully to the setup screen, clearing all prior student data from React state (not from IndexedDB — responses are kept).
+- **No network calls** — the app must work on flaky school wifi. Nothing should phone home. The similarity scorer is written from scratch with no external NLP library — it uses asymmetric containment overlap entirely inline.
+- **Shared-device support** — "Next Student Session" resets active screen for the next student while preserving teacher passage, custom labels, and format mode.
 
 ---
 
@@ -115,29 +115,30 @@ These are in rough priority order. Check them off as they're completed.
 Production build via `npm run build` (Vite 5):
 
 ```
-dist/index.html                   0.59 kB (gzip: 0.35 kB)
-dist/assets/index-*.css           1.92 kB (gzip: 0.77 kB)
-dist/assets/index-*.js          155.95 kB (gzip: 50.20 kB)
+dist/index.html                   0.69 kB (gzip: 0.39 kB)
+dist/assets/index-*.css           2.48 kB (gzip: 0.93 kB)
+dist/assets/index-*.js          177.28 kB (gzip: 55.34 kB)
 dist/sw.js                        service worker (Workbox)
-dist/manifest.webmanifest         PWA manifest
+dist/manifest.webmanifest         0.38 kB
+dist/icon-192.png, icon-512.png, icon.svg
 ```
 
-PWA precache: 5 entries (~155 kB). Build time: ~0.5s.
+PWA precache: 10 entries (~182 kB). Build time: ~0.4s.
 
 ---
 
-## Known issues
+## Resolved issues
 
-1. **Similarity metric length distortion (Critical)** — `similarity.js` calculates symmetric cosine similarity between student text (typically a 10–20 word quote) and the reading passage (300–600 words). Because cosine similarity divides by $\sqrt{|Passage|}$, a verbatim 15-word quote against a 500-word passage maxes out at ~17%, triggering false red warning badges (`#c62828` for `<20%`) in `Results.jsx`. Should be replaced with asymmetric containment overlap ($\frac{|Tokens_{student} \cap Tokens_{passage}|}{|Tokens_{student}|}$).
-2. **Refresh & navigation data loss (Critical)** — Student writing state in `StudentFlow.jsx` is ephemeral in-memory React state. An accidental page reload, trackpad back-swipe, or dead battery wipes out all student work immediately without a `beforeunload` confirmation or `sessionStorage` autosave.
-3. **Silent IndexedDB failure (Critical)** — `Results.jsx` catches `saveResponse()` rejections with `console.error` without setting UI error states. If IndexedDB storage quota or private browsing causes a write failure, the student sees "Response Submitted" and assumes work is safe when it has been lost.
-4. **Shared-device reset wipes teacher passage & labels (High)** — Clicking "New Student Session" completely resets `session` to `null` in `App.jsx`, unmounting `TeacherSetup` and forcing the teacher to re-enter the reading passage and custom labels for every single student.
-5. **Hardcoded "Point" violates configurable labels invariant (High)** — `StudentFlow.jsx` (line 83: `Point {i + 1} of {NUM_POINTS}`) and `Results.jsx` (line 56: `Point {i + 1}`) hardcode the word "Point", defying the teacher's configured `labels.point`.
-6. **Missing `public/` directory & PWA icons (High Blocker)** — `vite.config.js` and `index.html` reference `/icon-192.png`, `/icon-512.png`, and `/icon.svg`. The `public/` directory does not exist, causing 404s and preventing PWA install prompts.
-7. **`Math.max(...spread)` call stack overflow risk (Medium)** — In `similarity.js`, `Math.max(1, ...Object.values(tf))` spreads unbounded word frequencies into function arguments, which will throw a call stack overflow error if vocabulary exceeds ~65k tokens.
-8. **React StrictMode double-save (Medium)** — In dev mode, `Results.jsx`'s `useEffect` mounts twice, creating duplicate rows in IndexedDB because `db.js` relies on `autoIncrement`.
-9. **Dead code** — `fullResponse` in `StudentFlow.jsx` (line 35–37) is computed but never included in the submission payload.
-10. **`startedAt` dropped from submission (Low)** — `TeacherSetup` generates `startedAt`, but `StudentFlow` discards it, preventing elapsed writing time calculation.
+1. **Similarity metric length distortion (Resolved)** — Replaced symmetric cosine similarity with asymmetric containment overlap in `similarity.js`. Verbatim quotes from the passage now correctly evaluate to ~100% text engagement.
+2. **Refresh & navigation data loss (Resolved)** — Added draft autosaving to `sessionStorage`/`localStorage` in `StudentFlow.jsx` plus a `beforeunload` warning modal if student has unsaved writing.
+3. **Silent IndexedDB failure (Resolved)** — `Results.jsx` displays a visible warning banner with a "Retry Save" button and "Copy Work to Clipboard" button if storage fails.
+4. **Shared-device reset wipes teacher passage & labels (Resolved)** — Teacher configuration (passage, labels, mode) is persisted across student sessions in `App.jsx` and `TeacherSetup.jsx`, while clearing previous student personal info and writing.
+5. **Hardcoded "Point" violates configurable labels invariant (Resolved)** — Replaced all instances of hardcoded "Point" with `labels.point` across `StudentFlow.jsx`, `Results.jsx`, `PrintWorksheet.jsx`, and `TeacherDashboard.jsx`.
+6. **Missing `public/` directory & PWA icons (Resolved)** — Created `public/icon-192.png`, `public/icon-512.png`, and `public/icon.svg`.
+7. **`Math.max(...spread)` call stack overflow risk (Resolved)** — Token frequencies are summed/bounded without spreading unbounded arrays into function arguments.
+8. **React StrictMode double-save (Resolved)** — Added `hasSavedRef` guard in `Results.jsx` to prevent duplicate rows in development mode.
+9. **Dead code (Resolved)** — `fullResponse` is now included in the submission payload.
+10. **`startedAt` dropped from submission (Resolved)** — `startedAt` is preserved throughout the pipeline.
 
 ---
 
