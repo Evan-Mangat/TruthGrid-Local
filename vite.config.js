@@ -3,7 +3,6 @@ import { createWriteStream } from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import Busboy from 'busboy'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -14,7 +13,8 @@ const MAX_OCR_UPLOAD_BYTES = 20 * 1024 * 1024
 function offlineOcrPlugin() {
   return {
     name: 'truthgrid-offline-ocr',
-    configureServer(server) {
+    async configureServer(server) {
+      const { default: Busboy } = await import('busboy')
       server.middlewares.use('/api/ocr', async (request, response) => {
         if (request.method !== 'POST') {
           response.writeHead(405, { Allow: 'POST' })
@@ -115,7 +115,11 @@ function offlineOcrPlugin() {
   }
 }
 
+// GitHub Pages serves the site at /TruthGrid-Local/; localhost dev runs at /
+const isGHPages = process.env.GITHUB_PAGES === 'true'
+
 export default defineConfig({
+  base: isGHPages ? '/TruthGrid-Local/' : '/',
   plugins: [
     react(),
     offlineOcrPlugin(),
@@ -132,8 +136,8 @@ export default defineConfig({
         background_color: '#ffffff',
         display: 'standalone',
         icons: [
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
         ],
       },
     }),

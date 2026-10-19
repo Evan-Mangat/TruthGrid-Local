@@ -186,8 +186,24 @@ export default function TeacherSetup({
     }
   }
 
+  const isStaticDeploy = !window.location.hostname.match(/^(localhost|127\.0\.0\.1|\[::1\])$/)
+
   return (
     <div className="page">
+      {isStaticDeploy && (
+        <div
+          role="note"
+          className="card"
+          style={{ marginBottom: '1rem', background: '#fff8e1', borderColor: '#ffe082', borderLeft: '5px solid #f9a825' }}
+        >
+          <strong style={{ color: '#5d4037' }}>PDF/image OCR is not available on this hosted version.</strong>
+          <p style={{ color: '#5d4037', marginTop: '0.25rem', marginBottom: 0 }}>
+            To scan a PDF or image passage, run the app locally with <code>npm run dev</code>.
+            On this site you can still paste passage text directly or upload a plain <code>.txt</code> file.
+          </p>
+        </div>
+      )}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
         <div>
           <h1>TruthGrid Classroom</h1>
