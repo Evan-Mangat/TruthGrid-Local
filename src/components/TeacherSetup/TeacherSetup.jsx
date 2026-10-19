@@ -36,6 +36,7 @@ export default function TeacherSetup({
 
   // 4. Preserve teacher's passage, labels, and mode across students
   const [passage, setPassage] = useState(saved.passage || '')
+  const [originalDocument, setOriginalDocument] = useState(saved.originalDocument || null)
   const [labels, setLabels] = useState(saved.labels || DEFAULT_LABELS)
   // 9. Short-form mode (1 point) vs Standard (3 points)
   const [mode, setMode] = useState(saved.mode || 'standard') // 'standard' | 'short'
@@ -74,6 +75,7 @@ export default function TeacherSetup({
 
     onReady({
       passage: passage.trim(),
+      originalDocument,
       studentName: studentName.trim(),
       studentNumber: studentNumber.trim(),
       labels,
@@ -96,6 +98,7 @@ export default function TeacherSetup({
     if (extension === 'txt' || extension === 'md') {
       try {
         setPassage(await file.text())
+        setOriginalDocument(null)
         setOcrConfirmation(`Loaded text from ${file.name}.`)
       } catch {
         setUploadError('Could not read this text file. Try saving it as UTF-8 plain text and uploading it again.')
@@ -121,6 +124,11 @@ export default function TeacherSetup({
         throw new Error(result.error || 'Offline OCR could not process this file.')
       }
       setPassage(result.text || '')
+      setOriginalDocument({
+        data: await file.arrayBuffer(),
+        name: file.name,
+        type: file.type || (extension === 'pdf' ? 'application/pdf' : `image/${extension}`),
+      })
       setOcrConfirmation(
         `Extracted via Offline OCR (${result.word_count} words, ${result.page_count} pages in ${result.elapsed_seconds}s). Review and edit the passage below.`
       )
@@ -200,8 +208,8 @@ export default function TeacherSetup({
             <button
               className="btn btn-secondary"
               type="button"
-              onClick={() => { setPassage(''); setOcrConfirmation(''); setUploadError('') }}
-              disabled={!passage && !ocrConfirmation}
+              onClick={() => { setPassage(''); setOriginalDocument(null); setOcrConfirmation(''); setUploadError('') }}
+              disabled={!passage && !originalDocument && !ocrConfirmation}
             >
               ✕ Clear Passage
             </button>

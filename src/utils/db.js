@@ -19,8 +19,8 @@ async function getDb() {
 
 export async function saveResponse(submission) {
   const db = await getDb()
-  const { id: _id, ...response } = submission
-  return db.put(STORE, { ...response, id: submission.submittedAt })
+  const id = submission.id || globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  return db.put(STORE, { ...submission, id })
 }
 
 export async function getAllResponses() {

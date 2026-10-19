@@ -25,9 +25,9 @@ This is a spin-off of the **TruthGrid web prototype** (the original Peer-Review-
 
 ## Architecture
 
-**Stack**: React 18 + Vite 5, PWA via `vite-plugin-pwa` (Workbox), IndexedDB via `idb`, no backend.
+**Stack**: React 18 + Vite 5, PWA via `vite-plugin-pwa` (Workbox), IndexedDB via `idb`, no production backend. A development-only Vite middleware runs `ocr_grader.py` for PDF/image OCR uploads.
 
-Everything runs in the browser. No server, no API calls, no external data. Offline after first load via service worker.
+The writing workflow and response storage run in the browser. No hosted API or external data service is used by the static PWA. The development OCR endpoint is available only while running the local Vite server; static deployments support browser-loaded TXT/MD but need a separate local OCR service for scanned PDFs/images. The cached app shell works offline after installation; hosted updates require connectivity.
 
 ```
 src/
@@ -35,30 +35,30 @@ src/
   index.css                   — design tokens (CSS vars), shared layout utilities
   components/
     TeacherSetup/
-      TeacherSetup.jsx         — teacher pastes passage, enters student info, customizes labels
+      TeacherSetup.jsx         — teacher enters passage/student info, uploads scans, customizes labels
     StudentFlow/
       StudentFlow.jsx          — three-point P/E/E writing form, passage stays visible
     Results/
       Results.jsx              — per-point similarity scores + full response display
-  utils/
-    similarity.js              — TF-IDF cosine similarity, 100% on-device
-    db.js                      — IndexedDB CRUD via idb (saveResponse, getAllResponses, deleteResponse)
+    utils/
+      similarity.js              — asymmetric lexical containment score, 100% on-device
+      db.js                      — IndexedDB CRUD via idb (saveResponse, getAllResponses, deleteResponse)
 ```
 
 ### Data flow
 
-1. **TeacherSetup** → produces a `session` object: `{ passage, studentName, studentNumber, labels, startedAt }`
-2. **StudentFlow** → receives `session`, produces a `submission` object: `{ studentName, studentNumber, passage, points: [{point, example, explanation} x3], similarityScores, submittedAt, labels }`
+1. **TeacherSetup** → produces a `session` object with passage, optional original scan bytes, student info, labels, and start time.
+2. **StudentFlow** → receives `session`, produces a `submission` object including the passage, original scan bytes when uploaded, structured points, similarity scores, and timestamps.
 3. **Results** → receives `submission`, calls `saveResponse()` on mount (saves to IndexedDB), displays scores
 4. "New Student Session" resets to `App` state `'setup'` — this is the group/shared-device flow
 
 ### Similarity scoring
 
-`src/utils/similarity.js` — TF-IDF cosine similarity between the student's text and the passage. No external library, no network. Returns a float 0–1. The `exampleScore` is used for display (the example field is most directly tied to the passage text). All three field scores are stored for future use.
+`src/utils/similarity.js` — asymmetric lexical containment between the student's text and the passage. No external library, no network. Returns a float 0–1, or `null` when there is no reference passage. The `exampleScore` is used for display (the example field is most directly tied to the passage text). All three field scores are stored for future use.
 
 ### Storage
 
-`src/utils/db.js` — IndexedDB via `idb`. Database: `truthgrid`, store: `responses`. Indexed by `submittedAt` and `studentName`. All data stays on the local device. `getAllResponses()` is ready to use for the export and teacher dashboard features.
+`src/utils/db.js` — IndexedDB via `idb`. Database: `truthgrid`, store: `responses`. Indexed by `submittedAt` and `studentName`. Responses use unique generated IDs; source scan bytes, when present, are stored with the response. All data stays on the local device.
 
 ---
 
@@ -144,13 +144,9 @@ PWA precache: 10 entries (~182 kB). Build time: ~0.4s.
 
 ## Testing
 
-No test framework is currently installed. No tests exist. Future testing should include:
+Run the test suites with `npm test` and `npm run build && npm run test:pwa`. Vitest covers scoring, CSV safety, teacher setup, student scan preview, dashboard statistics/errors, IndexedDB persistence, and the app workflow. Playwright checks the production PWA manifest and cached shell after going offline. Install the browser once with `npx playwright install chromium` if Playwright reports that its browser is missing.
 
-- **Unit tests** for `scoreSimilarity()` with edge cases (empty strings, identical text, no overlap)
-- **Unit tests** for `db.js` CRUD operations (can use `fake-indexeddb` for Node.js testing)
-- **Component tests** for form validation in TeacherSetup and StudentFlow
-- **Integration test** for the full `setup → writing → results → reset` cycle
-- **PWA/offline test** after icons are added — verify the app loads from service worker cache with network disabled
+The offline browser test verifies the cached shell and standalone manifest; it does not test deployment-specific OCR availability or guarantee recovery from browser site-data deletion. OCR is available through development middleware only; static deployments need a separate OCR service for scans. The student writing view includes the extracted text and a local preview/open link for the original uploaded PDF/image, with a reminder to verify OCR against the scan.
 
 ---
 

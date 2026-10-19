@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { saveResponse } from '../../utils/db'
+import { clearActiveDraft } from '../StudentFlow/StudentFlow'
 
 function ScoreBadge({ score }) {
   if (score === null || score === undefined) {
@@ -42,7 +43,7 @@ function ScoreBadge({ score }) {
   )
 }
 
-export default function Results({ submission, session, onReset, onNavigateToDashboard }) {
+export default function Results({ submission, session, onReset, onNavigateToDashboard, saveOnMount = true }) {
   const { points, similarityScores, labels, studentName, studentNumber, submittedAt, passage } = submission
 
   const [saveStatus, setSaveStatus] = useState('saving') // 'saving' | 'saved' | 'error'
@@ -59,6 +60,7 @@ export default function Results({ submission, session, onReset, onNavigateToDash
     try {
       await saveResponse(submission)
       setSaveStatus('saved')
+      clearActiveDraft()
     } catch (err) {
       hasSavedRef.current = false
       console.error('IndexedDB saveResponse error:', err)
@@ -68,10 +70,10 @@ export default function Results({ submission, session, onReset, onNavigateToDash
   }
 
   useEffect(() => {
-    if (!hasSavedRef.current) {
+    if (saveOnMount && !hasSavedRef.current) {
       performSave()
     }
-  }, [])
+  }, [saveOnMount])
 
   const hasPassage = Boolean(passage && passage.trim())
 
@@ -87,9 +89,15 @@ export default function Results({ submission, session, onReset, onNavigateToDash
           `\n${labels.point} ${i + 1}:\n${p.point}\n${labels.example} ${i + 1}:\n${p.example}\n${labels.explanation} ${i + 1}:\n${p.explanation}`
       ),
     ]
+    if (!navigator.clipboard?.writeText) {
+      setSaveErrorMessage('Clipboard access is unavailable. Select and copy your response from the page, or retry saving.')
+      return
+    }
     navigator.clipboard.writeText(textLines.join('\n')).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 3000)
+    }).catch(() => {
+      setSaveErrorMessage('Clipboard access was denied. Select and copy your response from the page, or retry saving.')
     })
   }
 
@@ -234,7 +242,7 @@ export default function Results({ submission, session, onReset, onNavigateToDash
       </div>
 
       <div className="no-print" style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <button className="btn btn-secondary" style={{ width: '100%', padding: '0.75rem' }} onClick={onReset}>
+        <button className="btn btn-secondary" style={{ width: '100%', padding: '0.75rem' }} onClick={onReset} disabled={saveStatus === 'error'} title={saveStatus === 'error' ? 'Save or copy the response before starting another student session.' : undefined}>
           Next Student Session (Reset Device)
         </button>
       </div>

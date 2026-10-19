@@ -1,9 +1,10 @@
 // TruthGrid Local — CSV Export Utility
 // Serializes stored IndexedDB student responses into a classroom-ready CSV file.
 
-function escapeCsvField(val) {
+export function escapeCsvField(val) {
   if (val === null || val === undefined) return ''
-  const str = String(val)
+  let str = String(val)
+  if (/^[\u0000-\u0020]*[=+@-]/.test(str)) str = `'${str}`
   if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
     return `"${str.replace(/"/g, '""')}"`
   }

@@ -42,6 +42,7 @@ export function clearActiveDraft() {
 
 export default function StudentFlow({ session, onSubmit }) {
   const { passage, studentName, studentNumber, labels, startedAt } = session
+  const originalDocument = session.originalDocument
   const numPoints = session.numPoints || (session.mode === 'short' ? 1 : 3)
 
   // Initialize from saved draft if available, or empty points
@@ -55,8 +56,19 @@ export default function StudentFlow({ session, onSubmit }) {
 
   const [errors, setErrors] = useState({})
   const [passageExpanded, setPassageExpanded] = useState(true)
+  const [documentUrl, setDocumentUrl] = useState('')
   const [lastSavedAt, setLastSavedAt] = useState(null)
   const isSubmittingRef = useRef(false)
+
+  useEffect(() => {
+    if (!originalDocument?.data) {
+      setDocumentUrl('')
+      return undefined
+    }
+    const url = URL.createObjectURL(new Blob([originalDocument.data], { type: originalDocument.type }))
+    setDocumentUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [originalDocument])
 
   // Check if student has written anything
   const hasUnsavedContent = points.some(
@@ -130,14 +142,14 @@ export default function StudentFlow({ session, onSubmit }) {
       exampleScore: scoreSimilarity(p.example, passage),
       explanationScore: scoreSimilarity(p.explanation, passage),
     }))
-
-    // Clear saved draft since work is successfully submitted
-    clearActiveDraft()
+    const id = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`
 
     onSubmit({
+      id,
       studentName,
       studentNumber: session.studentNumber,
       passage,
+      originalDocument,
       points,
       fullResponse,
       numPoints,
@@ -184,18 +196,44 @@ export default function StudentFlow({ session, onSubmit }) {
       {/* Reading passage (only if reference passage was assigned) */}
       {passage && passage.trim() ? (
         <div className="card">
-          <div
-            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-            onClick={() => setPassageExpanded(v => !v)}
+          <button
+            type="button"
+            aria-expanded={passageExpanded}
+            aria-controls="student-reading-passage"
+            onClick={() => setPassageExpanded(value => !value)}
+            style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: 0, background: 'transparent', color: 'inherit', font: 'inherit', textAlign: 'left', cursor: 'pointer' }}
           >
             <h3>Reading Passage</h3>
             <span className="muted" style={{ fontSize: '0.85rem' }}>{passageExpanded ? 'Hide ▲' : 'Show ▼'}</span>
-          </div>
-          {passageExpanded && (
-            <p style={{ marginTop: '0.75rem', whiteSpace: 'pre-wrap', lineHeight: '1.7' }}>{passage}</p>
-          )}
+          </button>
+          <p id="student-reading-passage" hidden={!passageExpanded} style={{ marginTop: '0.75rem', whiteSpace: 'pre-wrap', lineHeight: '1.7' }}>{passage}</p>
         </div>
       ) : null}
+
+      {originalDocument && documentUrl && (
+        <section className="card" aria-labelledby="scan-reference-heading">
+          <h3 id="scan-reference-heading">Original Scan Reference</h3>
+          <p className="muted" style={{ marginBottom: '0.75rem' }}>
+            OCR can misread words or punctuation. Double-check the extracted passage against this original scan before using it as evidence.
+          </p>
+          <a href={documentUrl} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginBottom: '0.75rem' }}>
+            Open original file: {originalDocument.name}
+          </a>
+          {originalDocument.type === 'application/pdf' ? (
+            <iframe
+              title={`Original scan: ${originalDocument.name}`}
+              src={documentUrl}
+              style={{ display: 'block', width: '100%', height: 'min(70vh, 720px)', border: '1px solid var(--color-border)' }}
+            />
+          ) : (
+            <img
+              src={documentUrl}
+              alt={`Original scanned passage: ${originalDocument.name}`}
+              style={{ display: 'block', maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', border: '1px solid var(--color-border)' }}
+            />
+          )}
+        </section>
+      )}
 
       {/* Structured points */}
       {points.map((p, i) => (

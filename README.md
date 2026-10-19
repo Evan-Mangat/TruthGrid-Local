@@ -2,6 +2,14 @@
 
 Local-first literary analysis writing tool for secondary classrooms.
 
+## Install and use the PWA
+
+The published app is a Progressive Web App, not a native `.exe` installer. Open its school-approved HTTPS URL in a supported browser while connected, then use the browser's **Install app** or **Add to Home Screen** command. Installation saves the app shell and assets on that device. When launched from its installed icon, it opens in a standalone app window, separate from the regular browser tab interface.
+
+After the first successful install and cache, the writing app shell and local response workflow do not require internet, Wi-Fi, or mobile data. The connection is needed again to receive a hosted update. Do not clear the browser's site data if local student responses need to be retained. Responses are stored in that browser profile's IndexedDB and are not synchronized or backed up automatically.
+
+This project does not provide an `.exe` because school-managed devices commonly require review and approval before executable software can be installed. The PWA distribution avoids asking students to install an unapproved executable; the school or district should still review and approve the hosted app and its student-data practices. This is a deployment choice, not a claim of legal compliance.
+
 ## Run the app
 
 ```bash
@@ -22,3 +30,22 @@ brew install tesseract
 ```
 
 PDF OCR may also require Poppler for multi-page PDF conversion (`brew install poppler`). The OCR endpoint accepts one PDF or image up to 20 MB at a time. Supported formats are PDF, PNG, JPG, JPEG, TIFF, and TIF.
+
+For PDF/image uploads, the original file is passed into the student session alongside the extracted passage. Students can open or inspect the original scan and should compare it with the OCR text because OCR can misread words and punctuation. The selected original is retained in the saved local response. Static PWA deployments do not include the development-only `/api/ocr` endpoint; scanned document upload requires a separately supported local OCR service, while TXT/MD files continue to load in the browser.
+
+## Tests
+
+Run unit, component, IndexedDB, and app-flow integration tests with:
+
+```bash
+npm test
+```
+
+Build the production PWA, then run the browser test that verifies the standalone manifest and reloads the cached app shell with network access disabled:
+
+```bash
+npm run build
+npm run test:pwa
+```
+
+The offline check proves the cached shell can start without a network connection. It does not make hosted updates or the development-only OCR endpoint available offline in a static deployment.

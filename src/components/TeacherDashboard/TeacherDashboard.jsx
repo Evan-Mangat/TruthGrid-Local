@@ -47,6 +47,7 @@ export default function TeacherDashboard({ onBack, onPrintBlankWorksheet, onPrin
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedId, setExpandedId] = useState(null)
   const [statusMessage, setStatusMessage] = useState(null)
+  const [loadError, setLoadError] = useState(null)
 
   useEffect(() => {
     loadResponses()
@@ -59,9 +60,10 @@ export default function TeacherDashboard({ onBack, onPrintBlankWorksheet, onPrin
       // Sort newest first
       data.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))
       setResponses(data)
+      setLoadError(null)
     } catch (err) {
       console.error('Could not load responses from IndexedDB:', err)
-      setStatusMessage('Error loading responses from local storage.')
+      setLoadError('Could not load responses from local storage. Your saved work may still be present; try reloading this page.')
     } finally {
       setLoading(false)
     }
@@ -89,16 +91,18 @@ export default function TeacherDashboard({ onBack, onPrintBlankWorksheet, onPrin
     )
   })
 
-  // Class statistics (only average submissions with a reference passage)
+  // Give each response one vote, regardless of whether it contains one or three points.
   const totalSubmissions = responses.length
-  const allScores = responses.flatMap(r =>
-    (r.similarityScores || [])
+  const submissionAverages = responses.map(r => {
+    if (!r.passage?.trim()) return null
+    const validScores = (r.similarityScores || [])
       .map(s => s.exampleScore)
       .filter(s => s !== null && s !== undefined)
-  )
+    return validScores.length ? validScores.reduce((sum, score) => sum + score, 0) / validScores.length : null
+  }).filter(score => score !== null)
   const avgClassScore =
-    allScores.length > 0
-      ? Math.round((allScores.reduce((a, b) => a + b, 0) / allScores.length) * 100)
+    submissionAverages.length > 0
+      ? Math.round((submissionAverages.reduce((sum, score) => sum + score, 0) / submissionAverages.length) * 100)
       : null
 
   return (
@@ -135,6 +139,11 @@ export default function TeacherDashboard({ onBack, onPrintBlankWorksheet, onPrin
       {statusMessage && (
         <div style={{ background: '#e8f5e9', border: '1px solid #a5d6a7', color: '#2e7d32', padding: '0.6rem 1rem', borderRadius: 'var(--radius)', marginBottom: '1rem' }}>
           {statusMessage}
+        </div>
+      )}
+      {loadError && (
+        <div role="alert" style={{ background: '#ffebee', border: '1px solid #e57373', borderLeft: '5px solid #c62828', color: '#b71c1c', padding: '0.75rem 1rem', marginBottom: '1rem' }}>
+          {loadError}
         </div>
       )}
 
@@ -183,7 +192,7 @@ export default function TeacherDashboard({ onBack, onPrintBlankWorksheet, onPrin
         <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
           <p className="muted">Loading stored responses from IndexedDB…</p>
         </div>
-      ) : filteredResponses.length === 0 ? (
+      ) : loadError ? null : filteredResponses.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '2.5rem 1rem' }}>
           <h3 style={{ marginBottom: '0.5rem' }}>No responses found</h3>
           <p className="muted">

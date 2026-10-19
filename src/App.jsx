@@ -11,7 +11,9 @@ export default function App() {
   const [screen, setScreen] = useState('setup')
   const [session, setSession] = useState(null)       // Active student session
   const [submission, setSubmission] = useState(null) // Completed submission
+  const [submissionIsStored, setSubmissionIsStored] = useState(false)
   const [activePrintConfig, setActivePrintConfig] = useState(null)
+  const [dashboardReturnScreen, setDashboardReturnScreen] = useState('setup')
 
   // 4. Preserved teacher configuration across student sessions
   const [teacherConfig, setTeacherConfig] = useState(() => {
@@ -28,17 +30,19 @@ export default function App() {
     // Update persistent teacher configuration
     const config = {
       passage: sessionData.passage,
+      originalDocument: sessionData.originalDocument,
       labels: sessionData.labels,
       mode: sessionData.mode,
       numPoints: sessionData.numPoints,
     }
     setTeacherConfig(config)
-    saveTeacherConfig(config)
+    saveTeacherConfig({ ...config, originalDocument: undefined })
     setScreen('writing')
   }
 
   function handleSubmission(submissionData) {
     setSubmission(submissionData)
+    setSubmissionIsStored(false)
     setScreen('results')
   }
 
@@ -46,11 +50,13 @@ export default function App() {
   function handleReset() {
     clearActiveDraft()
     setSubmission(null)
+    setSubmissionIsStored(false)
     setSession(null)
     setScreen('setup')
   }
 
-  function handleOpenDashboard() {
+  function handleOpenDashboard(returnScreen) {
+    setDashboardReturnScreen(returnScreen)
     setScreen('dashboard')
   }
 
@@ -61,6 +67,7 @@ export default function App() {
 
   function handlePrintStudentResponse(resp) {
     setSubmission(resp)
+    setSubmissionIsStored(true)
     setScreen('results')
   }
 
@@ -70,7 +77,7 @@ export default function App() {
         <TeacherSetup
           initialConfig={teacherConfig}
           onReady={handleSessionReady}
-          onNavigateToDashboard={handleOpenDashboard}
+          onNavigateToDashboard={() => handleOpenDashboard('setup')}
           onPrintBlankWorksheet={handlePrintBlankWorksheet}
         />
       )}
@@ -84,13 +91,14 @@ export default function App() {
           submission={submission}
           session={session}
           onReset={handleReset}
-          onNavigateToDashboard={handleOpenDashboard}
+          onNavigateToDashboard={() => handleOpenDashboard('results')}
+          saveOnMount={!submissionIsStored}
         />
       )}
 
       {screen === 'dashboard' && (
         <TeacherDashboard
-          onBack={() => setScreen(session ? 'writing' : 'setup')}
+          onBack={() => setScreen(dashboardReturnScreen)}
           onPrintBlankWorksheet={() => handlePrintBlankWorksheet(teacherConfig)}
           onPrintStudentResponse={handlePrintStudentResponse}
         />
