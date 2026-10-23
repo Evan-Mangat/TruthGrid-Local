@@ -160,4 +160,5 @@ GitHub agent configurations live in `.github/agents/`:
 | `truthgrid-dashboard.agent.md` | Teacher dashboard and export features |
 | `truthgrid-pwa-reliability.agent.md` | Offline behavior, service worker, icons |
 | `truthgrid-security-review.agent.md` | Security audit, input validation, data leaks |
+| `truthgrid-secure-coding.agent.md` | Secure implementation and OWASP Top 10:2025 review |
 | `truthgrid-senior-critic.agent.md` | Brutal code review — bugs, edge cases, quality |
