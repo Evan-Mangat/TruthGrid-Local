@@ -2,7 +2,7 @@
 
 ## What this project is
 
-A lightweight literary analysis writing tool for BC secondary students, built as a PWA (Progressive Web App). It guides students through a structured one-paragraph response to a reading passage using the **Point → Example → Explanation** framework, repeated three times. Terminology is configurable by the teacher before each session.
+A lightweight literary analysis writing tool for BC secondary students, built as a PWA (Progressive Web App). It guides students through a fully scaffolded one-paragraph literary analysis using the **TAG topic sentence → [Link + Point → Example → Explanation] × 3 → Concluding sentence** (PEEL) framework. Terminology is configurable by the teacher before each session.
 
 This is a spin-off of the **TruthGrid web prototype** (the original Peer-Review-Prototype repository), which was a college-level AI vs. human peer review tool. The web prototype is useful as a reference for business logic patterns but shares almost no UI or data model with this app.
 
@@ -10,9 +10,9 @@ This is a spin-off of the **TruthGrid web prototype** (the original Peer-Review-
 
 - **Client**: Vancouver School Board (VSB) secondary English teacher
 - **Target users**: High school students (BC curriculum, Literary Studies 10/11/12)
-- **Curriculum alignment**: Point–Example–Explanation maps to BC ELA outcomes for literary analysis. VSB's formal literacy initiative is the *Responsive Literacy Framework* (K–7 focused), but the PEE structure is the department-level convention this teacher uses. Labels are configurable so the app matches whatever terminology the teacher's department uses.
+- **Curriculum alignment**: The full paragraph scaffold (TAG topic sentence → PEEL × 3 → concluding sentence) maps to BC ELA outcomes for literary analysis. VSB's formal literacy initiative is the *Responsive Literacy Framework* (K–7 focused), but the PEEL structure is the department-level convention this teacher uses. Labels are configurable so the app matches whatever terminology the teacher's department uses. The **TAG** mnemonic (Title, Author, Genre) + echoing the writing prompt is the prescribed topic-sentence strategy.
 - **Device reality**: Old school laptops, flaky wifi. The app must work offline after first load, and must not be heavy to load.
-- **Key constraint**: Similarity scores are **flags for teacher review only**, never grades or verdicts. This must always be framed clearly in the UI.
+- **Key constraint**: Similarity scores are **flags for teacher review only**, never grades or verdicts, and are **not AI-detection**. This must always be framed clearly in the UI — the current wording explicitly says "This is NOT an AI detection tool."
 
 ### What is explicitly out of scope
 
@@ -35,11 +35,11 @@ src/
   index.css                   — design tokens (CSS vars), shared layout utilities
   components/
     TeacherSetup/
-      TeacherSetup.jsx         — teacher enters passage/student info, uploads scans, customizes labels
+      TeacherSetup.jsx         — teacher enters passage, writing prompt, student info, uploads scans, customizes labels
     StudentFlow/
-      StudentFlow.jsx          — three-point P/E/E writing form, passage stays visible
+      StudentFlow.jsx          — full PEEL writing form: topic sentence → [link+point+example+explanation] × n → concluding sentence
     Results/
-      Results.jsx              — per-point similarity scores + full response display
+      Results.jsx              — per-point similarity scores, full paragraph preview, topic/concluding sentence display
     utils/
       similarity.js              — asymmetric lexical containment score, 100% on-device
       db.js                      — IndexedDB CRUD via idb (saveResponse, getAllResponses, deleteResponse)
@@ -47,8 +47,8 @@ src/
 
 ### Data flow
 
-1. **TeacherSetup** → produces a `session` object with passage, optional original scan bytes, student info, labels, and start time.
-2. **StudentFlow** → receives `session`, produces a `submission` object including the passage, original scan bytes when uploaded, structured points, similarity scores, and timestamps.
+1. **TeacherSetup** → produces a `session` object with passage, writing prompt, optional original scan bytes, student info, labels, mode, and start time.
+2. **StudentFlow** → receives `session`, produces a `submission` object including passage, prompt, `topicSentence`, structured points (each with `link`, `point`, `example`, `explanation`), `concludingSentence`, similarity scores, and timestamps.
 3. **Results** → receives `submission`, calls `saveResponse()` on mount (saves to IndexedDB), displays scores
 4. "New Student Session" resets to `App` state `'setup'` — this is the group/shared-device flow
 
@@ -97,16 +97,18 @@ These are in rough priority order. Check them off as they're completed.
 - [x] **PWA icons** — created `public/icon-192.png`, `public/icon-512.png`, and `public/icon.svg`. Precaching verified in Vite PWA bundle.
 - [x] **Offline first-load resilience** — service worker configured with autoUpdate, precaches all 10 bundle assets including icons, manifest, and scripts for 100% offline usage.
 - [x] **Short-form mode** — single-point (one P/E/E) option in addition to default three-point mode, configurable in TeacherSetup.
+- [x] **Full PEEL scaffold** — expanded paragraph structure to: TAG topic sentence → [Link + Point → Example → Explanation] × n → Concluding sentence. Writing prompt field added to TeacherSetup; shown to students for word-echoing. Full Paragraph Preview in Results. Similarity score disclaimer explicitly states it is NOT an AI detection tool.
 - [ ] **Electron wrapper** — deferred until strict kiosk lockdown or local filesystem access is explicitly required.
 
 ---
 
 ## Design decisions to preserve
 
-- **Labels are always configurable** — never hardcode "Point", "Example", "Explanation" in user-facing strings. Always read from `session.labels`.
+- **Labels are always configurable** — never hardcode "Point", "Example", "Explanation", "Link", "Topic Sentence", or "Concluding Sentence" in user-facing strings. Always read from `session.labels`. Default labels: `topicSentence`, `link`, `point`, `example`, `explanation`, `concludingSentence`.
 - **Similarity scores are flags, not grades** — the UI always includes the disclaimer text. Never remove or soften it.
 - **No network calls** — the app must work on flaky school wifi. Nothing should phone home. The similarity scorer is written from scratch with no external NLP library — it uses asymmetric containment overlap entirely inline.
-- **Shared-device support** — "Next Student Session" resets active screen for the next student while preserving teacher passage, custom labels, and format mode.
+- **Shared-device support** — "Next Student Session" resets active screen for the next student while preserving teacher passage, writing prompt, custom labels, and format mode.
+- **Similarity scores are text-engagement flags, not AI detection** — the score measures lexical overlap between the student's quoted evidence and the passage. It never indicates whether writing is AI-generated. Do not imply otherwise in any UI copy.
 
 ---
 
