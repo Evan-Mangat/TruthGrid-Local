@@ -44,7 +44,7 @@ function ScoreBadge({ score }) {
 }
 
 export default function Results({ submission, session, onReset, onNavigateToDashboard, saveOnMount = true }) {
-  const { points, similarityScores, labels, studentName, studentNumber, submittedAt, passage } = submission
+  const { points, similarityScores, labels, studentName, studentNumber, submittedAt, passage, topicSentence, concludingSentence } = submission
 
   const [saveStatus, setSaveStatus] = useState('saving') // 'saving' | 'saved' | 'error'
   const [saveErrorMessage, setSaveErrorMessage] = useState(null)
@@ -84,10 +84,12 @@ export default function Results({ submission, session, onReset, onNavigateToDash
       `Submitted: ${new Date(submittedAt).toLocaleString()}`,
       ...(hasPassage ? [`\n--- Reading Passage ---\n${passage}\n`] : []),
       `--- Student Response ---`,
+      ...(topicSentence ? [`\n${labels.topicSentence || 'Topic Sentence'}:\n${topicSentence}`] : []),
       ...points.map(
         (p, i) =>
-          `\n${labels.point} ${i + 1}:\n${p.point}\n${labels.example} ${i + 1}:\n${p.example}\n${labels.explanation} ${i + 1}:\n${p.explanation}`
+          `\n${labels.point} ${i + 1}:\n${p.link ? `${labels.link || 'Link'}: ${p.link}\n` : ''}${p.point}\n${labels.example} ${i + 1}:\n${p.example}\n${labels.explanation} ${i + 1}:\n${p.explanation}`
       ),
+      ...(concludingSentence ? [`\n${labels.concludingSentence || 'Concluding Sentence'}:\n${concludingSentence}`] : []),
     ]
     if (!navigator.clipboard?.writeText) {
       setSaveErrorMessage('Clipboard access is unavailable. Select and copy your response from the page, or retry saving.')
@@ -196,7 +198,9 @@ export default function Results({ submission, session, onReset, onNavigateToDash
         <div className="card" style={{ borderLeft: '4px solid var(--color-accent)' }}>
           <h3>Text Engagement Indicator</h3>
           <p className="muted" style={{ marginTop: '0.3rem', fontSize: '0.9rem' }}>
-            This score measures how closely the student's examples connect to the reading passage using asymmetric lexical containment.
+            This score measures how closely the student's quoted evidence overlaps with words in the reading passage.
+            A higher score means the student is drawing language directly from the text.
+            <strong> This is NOT an AI detection tool</strong> — it does not check whether writing is human or AI generated.
             It is a flag for teacher review — <strong>not a grade or verdict</strong>.
           </p>
           <p style={{ marginTop: '0.6rem', fontSize: '1.1rem' }}>
@@ -212,15 +216,45 @@ export default function Results({ submission, session, onReset, onNavigateToDash
         </div>
       )}
 
+      {/* Full Paragraph Preview */}
+      <div className="card" style={{ borderLeft: '4px solid #78909c' }}>
+        <h3 style={{ marginBottom: '0.5rem' }}>Full Paragraph Preview</h3>
+        <p className="muted" style={{ fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+          The student's response assembled as a continuous paragraph.
+        </p>
+        <div style={{ lineHeight: '1.8', fontSize: '0.97rem', whiteSpace: 'pre-wrap' }}>
+          {[
+            topicSentence,
+            ...points.map(p => [p.link, p.point, p.example, p.explanation].filter(Boolean).join(' ')),
+            concludingSentence,
+          ].filter(Boolean).join(' ')}
+        </div>
+      </div>
+
+      {/* Topic Sentence */}
+      {topicSentence && (
+        <div className="card">
+          <h2 style={{ color: 'var(--color-accent)', marginBottom: '0.5rem' }}>
+            {labels.topicSentence || 'Topic Sentence'}
+          </h2>
+          <p style={{ whiteSpace: 'pre-wrap' }}>{topicSentence}</p>
+        </div>
+      )}
+
       {/* Per-point breakdown */}
       {points.map((p, i) => (
         <div className="card" key={i}>
-          {/* Fix configurable labels invariant: use labels.point instead of hardcoded 'Point' */}
           <h2 style={{ color: 'var(--color-accent)', marginBottom: '0.75rem' }}>
             {labels.point} {i + 1}
             {hasPassage && <ScoreBadge score={similarityScores[i]?.exampleScore} />}
           </h2>
 
+          {p.link && (
+            <div style={{ marginBottom: '0.75rem' }}>
+              <strong>{labels.link || 'Link'}:</strong>
+              <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{p.link}</p>
+            </div>
+          )}
           <div style={{ marginBottom: '0.75rem' }}>
             <strong>{labels.point}:</strong>
             <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{p.point}</p>
@@ -235,6 +269,16 @@ export default function Results({ submission, session, onReset, onNavigateToDash
           </div>
         </div>
       ))}
+
+      {/* Concluding Sentence */}
+      {concludingSentence && (
+        <div className="card">
+          <h2 style={{ color: 'var(--color-accent)', marginBottom: '0.5rem' }}>
+            {labels.concludingSentence || 'Concluding Sentence'}
+          </h2>
+          <p style={{ whiteSpace: 'pre-wrap' }}>{concludingSentence}</p>
+        </div>
+      )}
 
       {/* Printable Teacher Feedback Box */}
       <div className="print-only" style={{ marginTop: '2rem', border: '1px solid #000', padding: '1rem', minHeight: '120px' }}>

@@ -2,7 +2,15 @@ import React, { useEffect } from 'react'
 
 export default function PrintWorksheet({ config, onBack }) {
   const { passage, labels, mode } = config || {}
-  const activeLabels = labels || { point: 'Point', example: 'Example', explanation: 'Explanation' }
+  const activeLabels = {
+    topicSentence: 'Topic Sentence',
+    link: 'Link',
+    point: 'Point',
+    example: 'Example',
+    explanation: 'Explanation',
+    concludingSentence: 'Concluding Sentence',
+    ...(labels || {}),
+  }
   const numPoints = mode === 'short' ? 1 : 3
 
   useEffect(() => {
@@ -69,9 +77,22 @@ export default function PrintWorksheet({ config, onBack }) {
 
         {/* Instructions */}
         <p style={{ fontSize: '0.9rem', fontStyle: 'italic', marginBottom: '1rem', color: '#444' }}>
-          Directions: In the boxes below, write your response to the passage above. Follow the{' '}
-          <strong>{activeLabels.point} → {activeLabels.example} → {activeLabels.explanation}</strong> structure.
+          Directions: Complete each section below. Structure: <strong>{activeLabels.topicSentence}</strong> →
+          [{activeLabels.link} + {activeLabels.point} → {activeLabels.example} → {activeLabels.explanation}]{numPoints > 1 ? ' × 3' : ''} →
+          <strong> {activeLabels.concludingSentence}</strong>.
         </p>
+
+        {/* Topic Sentence box */}
+        <div style={{ border: '1.5px solid #222', borderRadius: '4px', padding: '0.75rem', marginBottom: '1rem', pageBreakInside: 'avoid' }}>
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', borderBottom: '1px solid #ccc', paddingBottom: '0.25rem' }}>
+            {activeLabels.topicSentence}
+          </h3>
+          <p style={{ fontSize: '0.8rem', color: '#555', marginBottom: '4px' }}>
+            TAG: Title, Author, Genre + central point (echo the key words of the prompt).
+          </p>
+          <div style={{ borderBottom: '1px dashed #777', height: '24px', marginTop: '4px' }}></div>
+          <div style={{ borderBottom: '1px dashed #777', height: '24px' }}></div>
+        </div>
 
         {/* Points grid */}
         {Array.from({ length: numPoints }).map((_, i) => (
@@ -91,7 +112,14 @@ export default function PrintWorksheet({ config, onBack }) {
 
             <div style={{ marginBottom: '0.75rem' }}>
               <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#333' }}>
-                1. {activeLabels.point} (Claim / Argument):
+                1. {activeLabels.link} (transition word/phrase — e.g. For instance, Furthermore):
+              </label>
+              <div style={{ borderBottom: '1px dashed #777', height: '24px', marginTop: '4px' }}></div>
+            </div>
+
+            <div style={{ marginBottom: '0.75rem' }}>
+              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#333' }}>
+                2. {activeLabels.point} (Claim / Argument):
               </label>
               <div style={{ borderBottom: '1px dashed #777', height: '24px', marginTop: '4px' }}></div>
               <div style={{ borderBottom: '1px dashed #777', height: '24px' }}></div>
@@ -99,7 +127,7 @@ export default function PrintWorksheet({ config, onBack }) {
 
             <div style={{ marginBottom: '0.75rem' }}>
               <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#333' }}>
-                2. {activeLabels.example} (Direct Quote or Detail from Text):
+                3. {activeLabels.example} (Direct Quote or Detail from Text):
               </label>
               <div style={{ borderBottom: '1px dashed #777', height: '24px', marginTop: '4px' }}></div>
               <div style={{ borderBottom: '1px dashed #777', height: '24px' }}></div>
@@ -107,7 +135,7 @@ export default function PrintWorksheet({ config, onBack }) {
 
             <div>
               <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#333' }}>
-                3. {activeLabels.explanation} (How this evidence supports your claim):
+                4. {activeLabels.explanation} (How this evidence supports your claim; echo the central point):
               </label>
               <div style={{ borderBottom: '1px dashed #777', height: '24px', marginTop: '4px' }}></div>
               <div style={{ borderBottom: '1px dashed #777', height: '24px' }}></div>
@@ -115,6 +143,18 @@ export default function PrintWorksheet({ config, onBack }) {
             </div>
           </div>
         ))}
+
+        {/* Concluding Sentence box */}
+        <div style={{ border: '1.5px solid #222', borderRadius: '4px', padding: '0.75rem', marginBottom: '1rem', pageBreakInside: 'avoid' }}>
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', borderBottom: '1px solid #ccc', paddingBottom: '0.25rem' }}>
+            {activeLabels.concludingSentence}
+          </h3>
+          <p style={{ fontSize: '0.8rem', color: '#555', marginBottom: '4px' }}>
+            Restate the central idea in a fresh way (e.g. Ultimately, through these symbols, [Author] warns that…).
+          </p>
+          <div style={{ borderBottom: '1px dashed #777', height: '24px', marginTop: '4px' }}></div>
+          <div style={{ borderBottom: '1px dashed #777', height: '24px' }}></div>
+        </div>
       </div>
     </div>
   )

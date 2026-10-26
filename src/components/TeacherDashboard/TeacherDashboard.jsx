@@ -214,7 +214,15 @@ export default function TeacherDashboard({ onBack, onPrintBlankWorksheet, onPrin
               validScores.length > 0
                 ? validScores.reduce((sum, s) => sum + s, 0) / validScores.length
                 : null
-            const labels = r.labels || { point: 'Point', example: 'Example', explanation: 'Explanation' }
+            const labels = {
+              topicSentence: 'Topic Sentence',
+              link: 'Link',
+              point: 'Point',
+              example: 'Example',
+              explanation: 'Explanation',
+              concludingSentence: 'Concluding Sentence',
+              ...(r.labels || {}),
+            }
 
             return (
               <div className="card" key={r.id || r.submittedAt} style={{ marginBottom: 0 }}>
@@ -276,6 +284,13 @@ export default function TeacherDashboard({ onBack, onPrintBlankWorksheet, onPrin
                       </div>
                     )}
 
+                    {r.topicSentence && (
+                      <div style={{ background: '#fff', padding: '0.8rem', borderRadius: '4px', border: '1px solid var(--color-border)', marginBottom: '0.75rem' }}>
+                        <strong style={{ color: 'var(--color-accent)', fontSize: '0.9rem' }}>{labels.topicSentence}:</strong>
+                        <p style={{ fontSize: '0.9rem', marginTop: '0.2rem' }}>{r.topicSentence}</p>
+                      </div>
+                    )}
+
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                       {pts.map((p, idx) => (
                         <div key={idx} style={{ background: '#fff', padding: '0.8rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
@@ -285,6 +300,11 @@ export default function TeacherDashboard({ onBack, onPrintBlankWorksheet, onPrin
                             </strong>
                             <ScoreBadge score={r.passage?.trim() ? scores[idx]?.exampleScore : null} />
                           </div>
+                          {p.link && (
+                            <p style={{ fontSize: '0.9rem', marginBottom: '0.3rem' }}>
+                              <strong>{labels.link}:</strong> {p.link}
+                            </p>
+                          )}
                           <p style={{ fontSize: '0.9rem', marginBottom: '0.3rem' }}>
                             <strong>{labels.point}:</strong> {p.point}
                           </p>
@@ -297,6 +317,13 @@ export default function TeacherDashboard({ onBack, onPrintBlankWorksheet, onPrin
                         </div>
                       ))}
                     </div>
+
+                    {r.concludingSentence && (
+                      <div style={{ background: '#fff', padding: '0.8rem', borderRadius: '4px', border: '1px solid var(--color-border)', marginTop: '0.75rem' }}>
+                        <strong style={{ color: 'var(--color-accent)', fontSize: '0.9rem' }}>{labels.concludingSentence}:</strong>
+                        <p style={{ fontSize: '0.9rem', marginTop: '0.2rem' }}>{r.concludingSentence}</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

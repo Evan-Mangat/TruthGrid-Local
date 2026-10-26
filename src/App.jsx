@@ -32,6 +32,7 @@ export default function App() {
     const config = {
       passage: sessionData.passage,
       originalDocument: sessionData.originalDocument,
+      prompt: sessionData.prompt,
       labels: sessionData.labels,
       mode: sessionData.mode,
       numPoints: sessionData.numPoints,

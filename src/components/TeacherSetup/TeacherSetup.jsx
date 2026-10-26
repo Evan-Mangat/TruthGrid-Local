@@ -4,9 +4,12 @@ import { hasTeacherPasscode, setTeacherPasscode, verifyTeacherPasscode } from '.
 const TEACHER_CONFIG_KEY = 'truthgrid_teacher_config'
 
 const DEFAULT_LABELS = {
+  topicSentence: 'Topic Sentence',
+  link: 'Link',
   point: 'Point',
   example: 'Example',
   explanation: 'Explanation',
+  concludingSentence: 'Concluding Sentence',
 }
 
 function loadSavedTeacherConfig() {
@@ -38,7 +41,8 @@ export default function TeacherSetup({
   // 4. Preserve teacher's passage, labels, and mode across students
   const [passage, setPassage] = useState(saved.passage || '')
   const [originalDocument, setOriginalDocument] = useState(saved.originalDocument || null)
-  const [labels, setLabels] = useState(saved.labels || DEFAULT_LABELS)
+  const [prompt, setPrompt] = useState(saved.prompt || '')
+  const [labels, setLabels] = useState({ ...DEFAULT_LABELS, ...(saved.labels || {}) })
   // 9. Short-form mode (1 point) vs Standard (3 points)
   const [mode, setMode] = useState(saved.mode || 'standard') // 'standard' | 'short'
 
@@ -62,10 +66,10 @@ export default function TeacherSetup({
   const [isSavingPasscode, setIsSavingPasscode] = useState(false)
   const fileInputRef = useRef(null)
 
-  // Auto-persist teacher settings (passage, labels, mode) to localStorage
+  // Auto-persist teacher settings (passage, labels, mode, prompt) to localStorage
   useEffect(() => {
-    saveTeacherConfig({ passage, labels, mode })
-  }, [passage, labels, mode])
+    saveTeacherConfig({ passage, labels, mode, prompt })
+  }, [passage, labels, mode, prompt])
 
   function validate() {
     const e = {}
@@ -85,6 +89,7 @@ export default function TeacherSetup({
     onReady({
       passage: passage.trim(),
       originalDocument,
+      prompt: prompt.trim(),
       studentName: studentName.trim(),
       studentNumber: studentNumber.trim(),
       labels,
@@ -338,6 +343,23 @@ export default function TeacherSetup({
         )}
       </div>
 
+      {/* Writing Prompt */}
+      <div className="card">
+        <label htmlFor="writing-prompt">
+          Writing Prompt / Task <span className="muted">(optional)</span>
+        </label>
+        <p className="muted" style={{ marginBottom: '0.6rem' }}>
+          The question or task students are responding to. Shown during writing to help students echo key words in their topic sentence.
+        </p>
+        <textarea
+          id="writing-prompt"
+          rows={3}
+          value={prompt}
+          onChange={e => setPrompt(e.target.value)}
+          placeholder="e.g. In a single, well-developed paragraph, explain how the author uses symbolism to prove that technology leads to social isolation."
+        />
+      </div>
+
       {/* 9. Response Format Mode (Short-form vs Standard) */}
       <div className="card">
         <label>Response Format</label>
@@ -361,7 +383,7 @@ export default function TeacherSetup({
               checked={mode === 'standard'}
               onChange={() => setMode('standard')}
             />
-            Standard Mode (3 Points: {labels.point} → {labels.example} → {labels.explanation} × 3)
+            Standard Mode (3 {labels.point}s: {labels.topicSentence} → [{labels.link} + {labels.point} → {labels.example} → {labels.explanation}] × 3 → {labels.concludingSentence})
           </label>
           <label
             style={{
@@ -421,8 +443,7 @@ export default function TeacherSetup({
           <div>
             <h3>Structure Labels</h3>
             <p className="muted">
-              Currently: <strong>{labels.point}</strong> · <strong>{labels.example}</strong> ·{' '}
-              <strong>{labels.explanation}</strong>
+              Currently: <strong>{labels.topicSentence}</strong> → <strong>{labels.link}</strong> + <strong>{labels.point}</strong> → <strong>{labels.example}</strong> → <strong>{labels.explanation}</strong> → <strong>{labels.concludingSentence}</strong>
             </p>
           </div>
           <button
@@ -436,15 +457,20 @@ export default function TeacherSetup({
 
         {showLabelEdit && (
           <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {['point', 'example', 'explanation'].map(key => (
+            {[
+              { key: 'topicSentence', label: 'Topic Sentence' },
+              { key: 'link', label: 'Link (transition word/phrase)' },
+              { key: 'point', label: 'Point (claim)' },
+              { key: 'example', label: 'Example (evidence/quote)' },
+              { key: 'explanation', label: 'Explanation (analysis)' },
+              { key: 'concludingSentence', label: 'Concluding Sentence' },
+            ].map(({ key, label }) => (
               <div key={key}>
-                <label htmlFor={`label-${key}`} style={{ textTransform: 'capitalize' }}>
-                  {key}
-                </label>
+                <label htmlFor={`label-${key}`}>{label}</label>
                 <input
                   id={`label-${key}`}
                   type="text"
-                  value={labels[key]}
+                  value={labels[key] || ''}
                   onChange={e => updateLabel(key, e.target.value)}
                 />
               </div>
