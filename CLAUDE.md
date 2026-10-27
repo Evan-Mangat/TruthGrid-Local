@@ -37,7 +37,7 @@ src/
     TeacherSetup/
       TeacherSetup.jsx         — teacher enters passage, writing prompt, student info, uploads scans, customizes labels
     StudentFlow/
-      StudentFlow.jsx          — full PEEL writing form: topic sentence → [link+point+example+explanation] × n → concluding sentence
+      StudentFlow.jsx          — Essay (three distinct points) or Literary Analysis (one repeated point), each with three evidence sections
     Results/
       Results.jsx              — per-point similarity scores, full paragraph preview, topic/concluding sentence display
     utils/
@@ -96,7 +96,7 @@ These are in rough priority order. Check them off as they're completed.
 - [x] **Teacher dashboard** — screen (`TeacherDashboard.jsx`) listing all stored IndexedDB responses with student name, date, search filtering, per-point detail expansion, CSV export, and print.
 - [x] **PWA icons** — created `public/icon-192.png`, `public/icon-512.png`, and `public/icon.svg`. Precaching verified in Vite PWA bundle.
 - [x] **Offline first-load resilience** — service worker configured with autoUpdate, precaches all 10 bundle assets including icons, manifest, and scripts for 100% offline usage.
-- [x] **Short-form mode** — single-point (one P/E/E) option in addition to default three-point mode, configurable in TeacherSetup.
+- [x] **Essay and Literary Analysis modes** — Essay uses three distinct points; Literary Analysis repeats one editable central point across three evidence and explanation sections. Both modes include generic Link, evidence, analysis, and conclusion guidance.
 - [x] **Full PEEL scaffold** — expanded paragraph structure to: TAG topic sentence → [Link + Point → Example → Explanation] × n → Concluding sentence. Writing prompt field added to TeacherSetup; shown to students for word-echoing. Full Paragraph Preview in Results. Similarity score disclaimer explicitly states it is NOT an AI detection tool.
 - [ ] **Electron wrapper** — deferred until strict kiosk lockdown or local filesystem access is explicitly required.
 

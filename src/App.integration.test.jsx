@@ -19,6 +19,9 @@ describe('classroom response workflow', () => {
     await user.click(screen.getByRole('button', { name: 'Start Writing Session' }))
     expect(screen.getByText('Open Prompt Mode')).toBeInTheDocument()
 
+    fireEvent.change(document.getElementById('topic-sentence'), { target: { value: 'The text develops a central idea through its details.' } })
+    fireEvent.change(document.getElementById('concluding-sentence'), { target: { value: 'Ultimately, these details reinforce the central idea.' } })
+
     for (let index = 0; index < 3; index += 1) {
       fireEvent.change(document.getElementById(`point-${index}`), { target: { value: `Claim ${index + 1}` } })
       fireEvent.change(document.getElementById(`example-${index}`), { target: { value: `Example ${index + 1}` } })

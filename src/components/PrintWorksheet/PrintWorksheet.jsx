@@ -11,7 +11,8 @@ export default function PrintWorksheet({ config, onBack }) {
     concludingSentence: 'Concluding Sentence',
     ...(labels || {}),
   }
-  const numPoints = mode === 'short' ? 1 : 3
+  const numPoints = 3
+  const isLiteraryAnalysis = mode === 'literary_analysis'
 
   useEffect(() => {
     // Optional auto-print or ready
@@ -94,6 +95,15 @@ export default function PrintWorksheet({ config, onBack }) {
           <div style={{ borderBottom: '1px dashed #777', height: '24px' }}></div>
         </div>
 
+        {isLiteraryAnalysis && (
+          <div style={{ border: '1.5px solid #222', borderRadius: '4px', padding: '0.75rem', marginBottom: '1rem', pageBreakInside: 'avoid' }}>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Central {activeLabels.point}</h3>
+            <p style={{ fontSize: '0.8rem', color: '#555', marginBottom: '4px' }}>Write this once. Repeat the same point in all three sections, supported by different evidence.</p>
+            <div style={{ borderBottom: '1px dashed #777', height: '24px', marginTop: '4px' }}></div>
+            <div style={{ borderBottom: '1px dashed #777', height: '24px' }}></div>
+          </div>
+        )}
+
         {/* Points grid */}
         {Array.from({ length: numPoints }).map((_, i) => (
           <div
@@ -112,14 +122,14 @@ export default function PrintWorksheet({ config, onBack }) {
 
             <div style={{ marginBottom: '0.75rem' }}>
               <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#333' }}>
-                1. {activeLabels.link} (transition word/phrase — e.g. For instance, Furthermore):
+                1. {activeLabels.link} (transition, integrated context/quote, or logical connection to the previous section):
               </label>
               <div style={{ borderBottom: '1px dashed #777', height: '24px', marginTop: '4px' }}></div>
             </div>
 
             <div style={{ marginBottom: '0.75rem' }}>
               <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#333' }}>
-                2. {activeLabels.point} (Claim / Argument):
+                2. {activeLabels.point} {isLiteraryAnalysis ? '(repeat the central point above)' : '(a distinct claim / argument)'}:
               </label>
               <div style={{ borderBottom: '1px dashed #777', height: '24px', marginTop: '4px' }}></div>
               <div style={{ borderBottom: '1px dashed #777', height: '24px' }}></div>
@@ -150,7 +160,7 @@ export default function PrintWorksheet({ config, onBack }) {
             {activeLabels.concludingSentence}
           </h3>
           <p style={{ fontSize: '0.8rem', color: '#555', marginBottom: '4px' }}>
-            Restate the central idea in a fresh way (e.g. Ultimately, through these symbols, [Author] warns that…).
+            Restate the central idea in a fresh way. Example finish: “A society shaped by [factor] may sacrifice genuine human connection and lose the empathy that makes a society truly human.”
           </p>
           <div style={{ borderBottom: '1px dashed #777', height: '24px', marginTop: '4px' }}></div>
           <div style={{ borderBottom: '1px dashed #777', height: '24px' }}></div>

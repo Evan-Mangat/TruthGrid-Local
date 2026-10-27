@@ -43,8 +43,8 @@ export default function TeacherSetup({
   const [originalDocument, setOriginalDocument] = useState(saved.originalDocument || null)
   const [prompt, setPrompt] = useState(saved.prompt || '')
   const [labels, setLabels] = useState({ ...DEFAULT_LABELS, ...(saved.labels || {}) })
-  // 9. Short-form mode (1 point) vs Standard (3 points)
-  const [mode, setMode] = useState(saved.mode || 'standard') // 'standard' | 'short'
+  // Essay uses three distinct points; literary analysis repeats one point.
+  const [mode, setMode] = useState(saved.mode === 'literary_analysis' ? 'literary_analysis' : 'essay')
 
   // Student info is ALWAYS cleared for the next student
   const [studentName, setStudentName] = useState('')
@@ -84,7 +84,7 @@ export default function TeacherSetup({
       return
     }
 
-    const numPoints = mode === 'short' ? 1 : 3
+    const numPoints = 3
 
     onReady({
       passage: passage.trim(),
@@ -356,52 +356,58 @@ export default function TeacherSetup({
           rows={3}
           value={prompt}
           onChange={e => setPrompt(e.target.value)}
-          placeholder="e.g. In a single, well-developed paragraph, explain how the author uses symbolism to prove that technology leads to social isolation."
+          placeholder="e.g. Explain how the author uses [technique] to develop the idea that [central point]."
         />
       </div>
 
-      {/* 9. Response Format Mode (Short-form vs Standard) */}
+      {/* Response format */}
       <div className="card">
         <label>Response Format</label>
         <p className="muted" style={{ marginBottom: '0.6rem' }}>
-          Choose the response length for this writing task.
+          Choose how students will organize the three evidence sections.
         </p>
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'grid', gap: '0.75rem' }}>
           <label
             style={{
-              display: 'flex',
-              alignItems: 'center',
+              display: 'grid',
+              gridTemplateColumns: 'auto 1fr',
+              alignItems: 'start',
               gap: '0.5rem',
               cursor: 'pointer',
-              fontWeight: mode === 'standard' ? 700 : 400,
+              fontWeight: mode === 'essay' ? 700 : 400,
             }}
           >
             <input
               type="radio"
               name="mode"
-              value="standard"
-              checked={mode === 'standard'}
-              onChange={() => setMode('standard')}
+              value="essay"
+              checked={mode === 'essay'}
+              onChange={() => setMode('essay')}
             />
-            Standard Mode (3 {labels.point}s: {labels.topicSentence} → [{labels.link} + {labels.point} → {labels.example} → {labels.explanation}] × 3 → {labels.concludingSentence})
+            <span>
+              Essay: three different {labels.point.toLowerCase()}s, each supported by its own evidence and explanation.
+            </span>
           </label>
           <label
             style={{
-              display: 'flex',
-              alignItems: 'center',
+              display: 'grid',
+              gridTemplateColumns: 'auto 1fr',
+              alignItems: 'start',
               gap: '0.5rem',
               cursor: 'pointer',
-              fontWeight: mode === 'short' ? 700 : 400,
+              fontWeight: mode === 'literary_analysis' ? 700 : 400,
             }}
           >
             <input
               type="radio"
               name="mode"
-              value="short"
-              checked={mode === 'short'}
-              onChange={() => setMode('short')}
+              value="literary_analysis"
+              checked={mode === 'literary_analysis'}
+              onChange={() => setMode('literary_analysis')}
             />
-            Short-Form Mode (1 Point: Single focused response)
+            <span>
+              Literary Analysis: one central {labels.point.toLowerCase()} repeated across three sections, with different evidence and explanations.
+            </span>
           </label>
         </div>
       </div>

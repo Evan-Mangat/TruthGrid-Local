@@ -16,6 +16,7 @@ function loadSavedDraft(numPoints) {
       return {
         ...parsed,
         topicSentence: parsed.topicSentence || '',
+        sharedPoint: parsed.sharedPoint || '',
         concludingSentence: parsed.concludingSentence || '',
         points: parsed.points.map(p => ({ link: '', ...p })),
       }
@@ -49,13 +50,15 @@ export default function StudentFlow({ session, onSubmit }) {
   const { passage, studentName, studentNumber, labels, startedAt } = session
   const originalDocument = session.originalDocument
   const prompt = session.prompt || ''
-  const numPoints = session.numPoints || (session.mode === 'short' ? 1 : 3)
+  const numPoints = 3
+  const isLiteraryAnalysis = session.mode === 'literary_analysis'
 
   // Initialize from saved draft if available, or empty points
   const savedDraft = loadSavedDraft(numPoints)
   const useDraft = savedDraft && savedDraft.studentName === studentName
 
   const [topicSentence, setTopicSentence] = useState(useDraft ? savedDraft.topicSentence : '')
+  const [sharedPoint, setSharedPoint] = useState(useDraft ? savedDraft.sharedPoint || savedDraft.points[0]?.point || '' : '')
   const [concludingSentence, setConcludingSentence] = useState(useDraft ? savedDraft.concludingSentence : '')
   const [points, setPoints] = useState(() =>
     useDraft ? savedDraft.points : Array.from({ length: numPoints }, () => emptyPoint())
@@ -80,6 +83,7 @@ export default function StudentFlow({ session, onSubmit }) {
   // Check if student has written anything
   const hasUnsavedContent =
     topicSentence.trim() ||
+    sharedPoint.trim() ||
     concludingSentence.trim() ||
     points.some(p => p.link.trim() || p.point.trim() || p.example.trim() || p.explanation.trim())
 
@@ -107,13 +111,14 @@ export default function StudentFlow({ session, onSubmit }) {
         studentNumber,
         numPoints,
         topicSentence,
+        sharedPoint,
         concludingSentence,
         points,
         savedAt: new Date().toISOString(),
       })
       setLastSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
     }
-  }, [points, topicSentence, concludingSentence, studentName, studentNumber, numPoints, hasUnsavedContent])
+  }, [points, topicSentence, sharedPoint, concludingSentence, studentName, studentNumber, numPoints, hasUnsavedContent])
 
   function updateField(index, field, value) {
     setPoints(prev => prev.map((p, i) => (i === index ? { ...p, [field]: value } : p)))
@@ -127,8 +132,9 @@ export default function StudentFlow({ session, onSubmit }) {
   function validate() {
     const e = {}
     if (!topicSentence.trim()) e.topicSentence = `${labels.topicSentence || 'Topic Sentence'} is required.`
+    if (isLiteraryAnalysis && !sharedPoint.trim()) e.sharedPoint = `${labels.point} is required.`
     points.forEach((p, i) => {
-      if (!p.point.trim()) e[`${i}-point`] = `${labels.point} ${i + 1} is required.`
+      if (!isLiteraryAnalysis && !p.point.trim()) e[`${i}-point`] = `${labels.point} ${i + 1} is required.`
       if (!p.example.trim()) e[`${i}-example`] = `${labels.example} ${i + 1} is required.`
       if (!p.explanation.trim()) e[`${i}-explanation`] = `${labels.explanation} ${i + 1} is required.`
     })
@@ -144,14 +150,17 @@ export default function StudentFlow({ session, onSubmit }) {
     }
 
     isSubmittingRef.current = true
+    const submittedPoints = isLiteraryAnalysis
+      ? points.map(point => ({ ...point, point: sharedPoint }))
+      : points
 
     const fullResponse = [
       topicSentence,
-      ...points.map(p => [p.link, p.point, p.example, p.explanation].filter(Boolean).join(' ')),
+      ...submittedPoints.map(p => [p.link, p.point, p.example, p.explanation].filter(Boolean).join(' ')),
       concludingSentence,
     ].filter(Boolean).join(' ')
 
-    const similarityScores = points.map(p => ({
+    const similarityScores = submittedPoints.map(p => ({
       pointScore: scoreSimilarity(p.point, passage),
       exampleScore: scoreSimilarity(p.example, passage),
       explanationScore: scoreSimilarity(p.explanation, passage),
@@ -166,11 +175,12 @@ export default function StudentFlow({ session, onSubmit }) {
       prompt,
       originalDocument,
       topicSentence,
+      sharedPoint: isLiteraryAnalysis ? sharedPoint : '',
       concludingSentence,
-      points,
+      points: submittedPoints,
       fullResponse,
       numPoints,
-      mode: session.mode || (numPoints === 1 ? 'short' : 'standard'),
+      mode: session.mode || 'essay',
       similarityScores,
       startedAt: startedAt || new Date().toISOString(),
       submittedAt: new Date().toISOString(),
@@ -184,7 +194,7 @@ export default function StudentFlow({ session, onSubmit }) {
         <div>
           <h1>Literary Analysis</h1>
           <p className="muted">
-            {studentName} {studentNumber ? `(#${studentNumber})` : ''} · {numPoints === 1 ? 'Short-Form Response' : '3-Point Response'}
+            {studentName} {studentNumber ? `(#${studentNumber})` : ''} · {isLiteraryAnalysis ? 'Literary Analysis' : 'Essay'}
             {!(passage && passage.trim()) && (
               <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', background: '#eceff1', color: '#455a64', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 600 }}>
                 Open Prompt Mode
@@ -209,6 +219,26 @@ export default function StudentFlow({ session, onSubmit }) {
           </div>
         )}
       </div>
+
+      {isLiteraryAnalysis && (
+        <div className="card" style={{ borderLeft: '4px solid var(--color-accent)' }}>
+          <label htmlFor="shared-point">Central {labels.point}</label>
+          <p className="muted" style={{ marginBottom: '0.5rem' }}>
+            Write your main {labels.point.toLowerCase()} once. It will appear in all three sections; each section should use different evidence and explanation.
+          </p>
+          <textarea
+            id="shared-point"
+            rows={2}
+            value={sharedPoint}
+            onChange={event => {
+              setSharedPoint(event.target.value)
+              setErrors(previous => { const next = { ...previous }; delete next.sharedPoint; return next })
+            }}
+            placeholder={`e.g. [Topic or technique] reveals [your central idea].`}
+          />
+          {errors.sharedPoint && <p className="error-msg">{errors.sharedPoint}</p>}
+        </div>
+      )}
 
       {/* Reading passage (only if reference passage was assigned) */}
       {passage && passage.trim() ? (
@@ -274,7 +304,7 @@ export default function StudentFlow({ session, onSubmit }) {
             setTopicSentence(e.target.value)
             setErrors(prev => { const ne = { ...prev }; delete ne.topicSentence; return ne })
           }}
-          placeholder={`e.g. In the short story "The Pedestrian", Bradbury uses powerful symbols to demonstrate that…`}
+          placeholder="e.g. In [title], [author] uses [technique] to develop the idea that [central point]."
         />
         {errors.topicSentence && <p className="error-msg">{errors.topicSentence}</p>}
       </div>
@@ -289,39 +319,49 @@ export default function StudentFlow({ session, onSubmit }) {
           <div style={{ marginBottom: '1rem' }}>
             <label htmlFor={`link-${i}`}>{labels.link || 'Link'}</label>
             <p className="muted" style={{ marginBottom: '0.4rem' }}>
-              Transition word or phrase that opens this section (e.g. <em>For instance, Furthermore, In addition</em>).
+              Connect this section to the last one. You can use a transition (<em>For example, Furthermore</em>), weave context or a short quote into your sentence, or link ideas through a logical shift from [earlier detail] to [next detail].
             </p>
             <textarea
               id={`link-${i}`}
               rows={1}
               value={p.link}
               onChange={e => updateField(i, 'link', e.target.value)}
-              placeholder="e.g. For instance, …"
+              placeholder="e.g. For instance, [introduce the next related idea]…"
             />
           </div>
 
           <div style={{ marginBottom: '1rem' }}>
-            <label htmlFor={`point-${i}`}>{labels.point}</label>
-            <p className="muted" style={{ marginBottom: '0.4rem' }}>State your argument or claim. (This should echo your central point from the topic sentence.)</p>
-            <textarea
-              id={`point-${i}`}
-              rows={2}
-              value={p.point}
-              onChange={e => updateField(i, 'point', e.target.value)}
-              placeholder={`Write your ${labels.point.toLowerCase()} here…`}
-            />
-            {errors[`${i}-point`] && <p className="error-msg">{errors[`${i}-point`]}</p>}
+            <label htmlFor={isLiteraryAnalysis ? 'shared-point' : `point-${i}`}>{labels.point}</label>
+            {isLiteraryAnalysis ? (
+              <p style={{ padding: '0.6rem 0.8rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', whiteSpace: 'pre-wrap' }}>
+                {sharedPoint || `Your central ${labels.point.toLowerCase()} will appear here.`}
+              </p>
+            ) : (
+              <>
+                <p className="muted" style={{ marginBottom: '0.4rem' }}>State this section’s argument. For an essay, each section should develop a different {labels.point.toLowerCase()}.</p>
+                <textarea
+                  id={`point-${i}`}
+                  rows={2}
+                  value={p.point}
+                  onChange={e => updateField(i, 'point', e.target.value)}
+                  placeholder={`e.g. [A different claim that supports your overall argument]`}
+                />
+                {errors[`${i}-point`] && <p className="error-msg">{errors[`${i}-point`]}</p>}
+              </>
+            )}
           </div>
 
           <div style={{ marginBottom: '1rem' }}>
             <label htmlFor={`example-${i}`}>{labels.example}</label>
-            <p className="muted" style={{ marginBottom: '0.4rem' }}>Quote or detail from the text that supports your {labels.point.toLowerCase()}.</p>
+            <p className="muted" style={{ marginBottom: '0.4rem' }}>
+              Add specific evidence. You can blend it into your own sentence: <em>The author develops this idea when [context] "[short quotation]".</em>
+            </p>
             <textarea
               id={`example-${i}`}
               rows={2}
               value={p.example}
               onChange={e => updateField(i, 'example', e.target.value)}
-              placeholder={`Write your ${labels.example.toLowerCase()} here…`}
+              placeholder="e.g. The author develops this idea when [context] ‘[short quotation or detail]’…"
             />
             {errors[`${i}-example`] && <p className="error-msg">{errors[`${i}-example`]}</p>}
           </div>
@@ -329,14 +369,14 @@ export default function StudentFlow({ session, onSubmit }) {
           <div>
             <label htmlFor={`explanation-${i}`}>{labels.explanation}</label>
             <p className="muted" style={{ marginBottom: '0.4rem' }}>
-              How does this evidence support your {labels.point.toLowerCase()}? What does it show about the text? (Echo the central point from your topic sentence.)
+              Explain what the evidence suggests and connect it back to your {labels.point.toLowerCase()}: <em>This detail suggests [what it reveals], supporting the idea that [restate your point].</em>
             </p>
             <textarea
               id={`explanation-${i}`}
               rows={3}
               value={p.explanation}
               onChange={e => updateField(i, 'explanation', e.target.value)}
-              placeholder={`Write your ${labels.explanation.toLowerCase()} here…`}
+              placeholder="e.g. This detail suggests [what it reveals], supporting the idea that [restate your point]."
             />
             {errors[`${i}-explanation`] && <p className="error-msg">{errors[`${i}-explanation`]}</p>}
           </div>
@@ -349,9 +389,9 @@ export default function StudentFlow({ session, onSubmit }) {
           {labels.concludingSentence || 'Concluding Sentence'}
         </h2>
         <p className="muted" style={{ marginBottom: '0.5rem' }}>
-          Restate your central idea in a fresh way. Focus on what was lost, or the broader lesson of the text.
+          Restate your central idea in a fresh way and explain why it matters beyond the evidence.
           <span style={{ display: 'block', marginTop: '0.25rem', fontStyle: 'italic' }}>
-            e.g. <em>Ultimately, through these symbols, [Author] warns that when society relies too heavily on technology, it sacrifices _____ and loses _____.</em>
+            Example finish: <em>A society shaped by [factor] may sacrifice genuine human connection and lose the empathy that makes a society truly human.</em>
           </span>
         </p>
         <textarea
@@ -370,6 +410,11 @@ export default function StudentFlow({ session, onSubmit }) {
       <button className="btn btn-primary" style={{ width: '100%', padding: '0.8rem', fontSize: '1.05rem' }} onClick={handleSubmit}>
         Submit Response
       </button>
+      {Object.keys(errors).length > 0 && (
+        <p className="error-msg" role="alert" style={{ marginTop: '0.5rem' }}>
+          Please complete the required fields marked above before submitting.
+        </p>
+      )}
     </div>
   )
 }

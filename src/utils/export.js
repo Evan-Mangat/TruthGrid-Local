@@ -24,14 +24,17 @@ export function exportResponsesToCSV(responses) {
     'Submission Time',
     'Format Mode',
     'Overall Engagement (%)',
+    'Link 1',
     'Point 1',
     'Example 1',
     'Explanation 1',
     'Example 1 Engagement (%)',
+    'Link 2',
     'Point 2',
     'Example 2',
     'Explanation 2',
     'Example 2 Engagement (%)',
+    'Link 3',
     'Point 3',
     'Example 3',
     'Explanation 3',
@@ -63,7 +66,11 @@ export function exportResponsesToCSV(responses) {
     const s2 = hasPassage && scores[1]?.exampleScore !== undefined && scores[1]?.exampleScore !== null ? Math.round(scores[1].exampleScore * 100) : (hasPassage ? '' : 'N/A (Open Prompt)')
     const s3 = hasPassage && scores[2]?.exampleScore !== undefined && scores[2]?.exampleScore !== null ? Math.round(scores[2].exampleScore * 100) : (hasPassage ? '' : 'N/A (Open Prompt)')
 
-    const mode = r.mode === 'short' || pts.length === 1 ? 'Short-Form (1 Point)' : 'Standard (3 Points)'
+    const mode = r.mode === 'literary_analysis'
+      ? 'Literary Analysis (1 Point, 3 Sections)'
+      : r.mode === 'short' || pts.length === 1
+        ? 'Legacy Short-Form (1 Point)'
+        : 'Essay (3 Points)'
 
     return [
       escapeCsvField(r.id || ''),
@@ -72,14 +79,17 @@ export function exportResponsesToCSV(responses) {
       escapeCsvField(r.submittedAt || ''),
       escapeCsvField(mode),
       escapeCsvField(avgScore),
+      escapeCsvField(p1.link || ''),
       escapeCsvField(p1.point || ''),
       escapeCsvField(p1.example || ''),
       escapeCsvField(p1.explanation || ''),
       escapeCsvField(s1),
+      escapeCsvField(p2.link || ''),
       escapeCsvField(p2.point || ''),
       escapeCsvField(p2.example || ''),
       escapeCsvField(p2.explanation || ''),
       escapeCsvField(s2),
+      escapeCsvField(p3.link || ''),
       escapeCsvField(p3.point || ''),
       escapeCsvField(p3.example || ''),
       escapeCsvField(p3.explanation || ''),
