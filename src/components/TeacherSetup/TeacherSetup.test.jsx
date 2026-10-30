@@ -16,6 +16,14 @@ describe('TeacherSetup', () => {
     expect(onReady).toHaveBeenCalledWith(expect.objectContaining({ passage: '', studentName: 'Alex Student' }))
   })
 
+  it('explains that the reading passage is source material, not a student draft field', () => {
+    render(<TeacherSetup onReady={vi.fn()} />)
+
+    expect(screen.getByLabelText(/Reading Passage for Students to Analyze/)).toBeInTheDocument()
+    expect(screen.getByText(/compare with their own writing/)).toBeInTheDocument()
+    expect(screen.getByText(/not a field for student drafts/)).toBeInTheDocument()
+  })
+
   it('loads text files directly and keeps the passage editable', async () => {
     const file = new File(['The green light symbolizes hope.'], 'passage.txt', { type: 'text/plain' })
     Object.defineProperty(file, 'text', { value: async () => 'The green light symbolizes hope.' })

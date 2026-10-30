@@ -250,9 +250,12 @@ export default function StudentFlow({ session, onSubmit }) {
             onClick={() => setPassageExpanded(value => !value)}
             style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: 0, background: 'transparent', color: 'inherit', font: 'inherit', textAlign: 'left', cursor: 'pointer' }}
           >
-            <h3>Reading Passage</h3>
+            <h3>Assigned Reading Passage</h3>
             <span className="muted" style={{ fontSize: '0.85rem' }}>{passageExpanded ? 'Hide ▲' : 'Show ▼'}</span>
           </button>
+          <p className="muted" style={{ marginTop: '0.5rem' }}>
+            This is the source text to analyze and compare with your own writing. It is not a place to enter your draft; use it to choose brief evidence that supports your argument.
+          </p>
           <p id="student-reading-passage" hidden={!passageExpanded} style={{ marginTop: '0.75rem', whiteSpace: 'pre-wrap', lineHeight: '1.7' }}>{passage}</p>
         </div>
       ) : null}
@@ -296,9 +299,13 @@ export default function StudentFlow({ session, onSubmit }) {
         <p className="muted" style={{ marginBottom: '0.5rem' }}>
           Use <strong>TAG</strong>: refer to the <strong>T</strong>itle, <strong>A</strong>uthor, and <strong>G</strong>enre of the text, then introduce your central point. Echo the key words of the writing prompt above.
         </p>
+        <p className="muted" style={{ marginBottom: '0.5rem' }}>
+          Your topic sentence should answer the writing prompt with an arguable idea, not just announce the subject. For example, for “How does Nia change?”: <em>In the short story “The Last Lantern,” A. Rivera shows Nia changing from avoiding responsibility to protecting her community, suggesting that courage grows when people act for others.</em>
+        </p>
         <textarea
           id="topic-sentence"
           rows={2}
+          spellCheck={true}
           value={topicSentence}
           onChange={e => {
             setTopicSentence(e.target.value)
@@ -324,6 +331,7 @@ export default function StudentFlow({ session, onSubmit }) {
             <textarea
               id={`link-${i}`}
               rows={1}
+              spellCheck={true}
               value={p.link}
               onChange={e => updateField(i, 'link', e.target.value)}
               placeholder="e.g. For instance, [introduce the next related idea]…"
@@ -342,6 +350,7 @@ export default function StudentFlow({ session, onSubmit }) {
                 <textarea
                   id={`point-${i}`}
                   rows={2}
+                  spellCheck={true}
                   value={p.point}
                   onChange={e => updateField(i, 'point', e.target.value)}
                   placeholder={`e.g. [A different claim that supports your overall argument]`}
@@ -354,14 +363,15 @@ export default function StudentFlow({ session, onSubmit }) {
           <div style={{ marginBottom: '1rem' }}>
             <label htmlFor={`example-${i}`}>{labels.example}</label>
             <p className="muted" style={{ marginBottom: '0.4rem' }}>
-              Add specific evidence. You can blend it into your own sentence: <em>The author develops this idea when [context] "[short quotation]".</em>
+              Set the moment in the text and connect it to your point: what is happening, and why does this moment support your argument? Choose only the most useful words; aim for a quote of about 8 words or fewer. Blend it into your sentence: <em>When [brief event], [character] says, “[short quote],” revealing [connection to your point].</em>
             </p>
             <textarea
               id={`example-${i}`}
               rows={2}
+              spellCheck={true}
               value={p.example}
               onChange={e => updateField(i, 'example', e.target.value)}
-              placeholder="e.g. The author develops this idea when [context] ‘[short quotation or detail]’…"
+              placeholder="e.g. When [text context], [character] says, ‘[brief, relevant quote]’…"
             />
             {errors[`${i}-example`] && <p className="error-msg">{errors[`${i}-example`]}</p>}
           </div>
@@ -369,11 +379,12 @@ export default function StudentFlow({ session, onSubmit }) {
           <div>
             <label htmlFor={`explanation-${i}`}>{labels.explanation}</label>
             <p className="muted" style={{ marginBottom: '0.4rem' }}>
-              Explain what the evidence suggests and connect it back to your {labels.point.toLowerCase()}: <em>This detail suggests [what it reveals], supporting the idea that [restate your point].</em>
+              Zoom in on a specific word or phrase. Explain what it suggests, how the figurative language works (if present), and how that exact detail supports your {labels.point.toLowerCase()}. Do more than repeat the quote: <em>The word “[word]” suggests [meaning], which supports my point because [reason].</em>
             </p>
             <textarea
               id={`explanation-${i}`}
               rows={3}
+              spellCheck={true}
               value={p.explanation}
               onChange={e => updateField(i, 'explanation', e.target.value)}
               placeholder="e.g. This detail suggests [what it reveals], supporting the idea that [restate your point]."
@@ -397,6 +408,7 @@ export default function StudentFlow({ session, onSubmit }) {
         <textarea
           id="concluding-sentence"
           rows={2}
+          spellCheck={true}
           value={concludingSentence}
           onChange={e => {
             setConcludingSentence(e.target.value)
@@ -406,6 +418,17 @@ export default function StudentFlow({ session, onSubmit }) {
         />
         {errors.concludingSentence && <p className="error-msg">{errors.concludingSentence}</p>}
       </div>
+
+      <section className="card" aria-labelledby="conventions-check-heading">
+        <h2 id="conventions-check-heading">Final Conventions Check</h2>
+        <p className="muted">Before submitting, reread your response and check:</p>
+        <ul>
+          <li>Use literary present tense when writing about the text: “Nia realizes,” not “Nia realized.”</li>
+          <li>Use third person; avoid “I,” “you,” and “we” in your analysis.</li>
+          <li>Check that sentences are complete, words agree, and punctuation is clear. Read your work aloud if it helps.</li>
+          <li>Use your browser’s spelling suggestions where available. Spellcheck and grammar tools vary by browser and do not catch every issue.</li>
+        </ul>
+      </section>
 
       <button className="btn btn-primary" style={{ width: '100%', padding: '0.8rem', fontSize: '1.05rem' }} onClick={handleSubmit}>
         Submit Response

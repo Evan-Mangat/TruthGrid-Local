@@ -98,6 +98,7 @@ These are in rough priority order. Check them off as they're completed.
 - [x] **Offline first-load resilience** — service worker configured with autoUpdate, precaches all 10 bundle assets including icons, manifest, and scripts for 100% offline usage.
 - [x] **Essay and Literary Analysis modes** — Essay uses three distinct points; Literary Analysis repeats one editable central point across three evidence and explanation sections. Both modes include generic Link, evidence, analysis, and conclusion guidance.
 - [x] **Full PEEL scaffold** — expanded paragraph structure to: TAG topic sentence → [Link + Point → Example → Explanation] × n → Concluding sentence. Writing prompt field added to TeacherSetup; shown to students for word-echoing. Full Paragraph Preview in Results. Similarity score disclaimer explicitly states it is NOT an AI detection tool.
+- [ ] **Optional offline grammar feedback** — after teacher feedback, assess a limited on-device checker for prototype demonstrations. Suggestions must be optional and clearly fallible, never grades or definitive corrections, and student writing must remain on-device.
 - [ ] **Electron wrapper** — deferred until strict kiosk lockdown or local filesystem access is explicitly required.
 
 ---

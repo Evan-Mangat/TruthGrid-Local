@@ -35,6 +35,28 @@ describe('StudentFlow scan reference', () => {
     expect(screen.getByRole('link', { name: 'Open original file: scan.png' })).toHaveAttribute('href', 'blob:scan-reference')
   })
 
+  it('clarifies the source passage and gives argument, evidence, analysis, and conventions guidance', () => {
+    render(
+      <StudentFlow
+        session={{
+          passage: 'Assigned source text',
+          studentName: 'Alex Student',
+          labels,
+          mode: 'literary_analysis',
+        }}
+        onSubmit={vi.fn()}
+      />
+    )
+
+    expect(screen.getByRole('heading', { name: 'Assigned Reading Passage' })).toBeInTheDocument()
+    expect(screen.getByText(/not a place to enter your draft/)).toBeInTheDocument()
+    expect(screen.getByText(/How does Nia change\?/)).toBeInTheDocument()
+    expect(screen.getAllByText(/about 8 words or fewer/)).toHaveLength(3)
+    expect(screen.getAllByText(/figurative language works/)).toHaveLength(3)
+    expect(screen.getByRole('heading', { name: 'Final Conventions Check' })).toBeInTheDocument()
+    expect(document.getElementById('topic-sentence')).toHaveAttribute('spellcheck', 'true')
+  })
+
   it.each(['essay', 'literary_analysis'])('explains blocked submission in %s mode', mode => {
     render(
       <StudentFlow

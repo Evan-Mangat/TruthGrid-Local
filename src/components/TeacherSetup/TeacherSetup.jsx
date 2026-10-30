@@ -292,7 +292,7 @@ export default function TeacherSetup({
         style={isDraggingFile ? { outline: '2px dashed var(--color-accent)', outlineOffset: 2 } : undefined}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <label htmlFor="passage">Reading Passage <span className="muted">(optional)</span></label>
+          <label htmlFor="passage">Reading Passage for Students to Analyze <span className="muted">(optional)</span></label>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             <input
               ref={fileInputRef}
@@ -315,7 +315,7 @@ export default function TeacherSetup({
           </div>
         </div>
         <p className="muted" style={{ marginBottom: '0.6rem' }}>
-          Paste a reference text, upload a document, or leave blank for an open prompt. Text files load directly; scanned PDF and image OCR runs locally during development. You can also drag a file here.
+          This is the source reading students will compare with their own writing and use to select evidence; it is not a field for student drafts. Paste a text, upload a document, or leave blank for an open prompt. Text files load directly; scanned PDF and image OCR runs locally during development. You can also drag a file here.
         </p>
         <textarea
           id="passage"
@@ -325,7 +325,7 @@ export default function TeacherSetup({
             setPassage(e.target.value)
             setErrors(v => ({ ...v, passage: null }))
           }}
-          placeholder="Paste your reading passage here, or leave blank for an open prompt…"
+          placeholder="Paste the source text students will analyze, or leave blank for an open prompt…"
         />
         {ocrConfirmation && <p role="status" style={{ color: 'var(--color-success)', marginTop: '0.5rem', fontWeight: 600 }}>{ocrConfirmation}</p>}
         {uploadError && (
