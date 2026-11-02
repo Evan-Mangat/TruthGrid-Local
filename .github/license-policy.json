@@ -1,0 +1,8 @@
+{
+  "blockedLicensePrefixes": [
+    "AGPL-",
+    "GPL-"
+  ],
+  "failOnMissingLicense": true,
+  "policyNote": "Starter policy based on the requested GPL/AGPL examples. Confirm or expand this list with the project owner; this is not legal advice."
+}

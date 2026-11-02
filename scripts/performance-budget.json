@@ -1,0 +1,23 @@
+{
+  "runs": 3,
+  "maxRegressionPercent": 15,
+  "absoluteBudgets": {
+    "first-contentful-paint": 2500,
+    "largest-contentful-paint": 3000,
+    "total-blocking-time": 300,
+    "cumulative-layout-shift": 0.1,
+    "speed-index": 4000,
+    "total-byte-weight": 1000000
+  },
+  "minimumScores": {
+    "performance-score": 0.85
+  },
+  "regressionNoiseFloors": {
+    "first-contentful-paint": 50,
+    "largest-contentful-paint": 75,
+    "total-blocking-time": 50,
+    "cumulative-layout-shift": 0.02,
+    "speed-index": 100,
+    "total-byte-weight": 5000
+  }
+}

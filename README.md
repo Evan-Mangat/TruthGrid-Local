@@ -57,3 +57,14 @@ npm run test:pwa
 ```
 
 The offline check proves the cached shell can start without a network connection. It does not make hosted updates or the development-only OCR endpoint available offline in a static deployment.
+
+## Pull request CI gates
+
+The `CI and GitHub Pages` workflow runs on pull requests and pushes to `main`. It runs the existing Vitest and offline PWA suites, builds the app, audits npm dependencies, checks a CycloneDX dependency SBOM against the starter license policy, and compares desktop Lighthouse results with the pull request base or previous push.
+
+- The npm audit gate fails on newly disclosed package/advisory pairs or severity increases. `.github/npm-audit-baseline.json` records the existing 18 reported vulnerabilities, including two critical findings, as known debt so they remain visible in reports without blocking every change. This is not a security approval or claim that those issues are resolved; review and remove baseline entries as packages are fixed.
+- `.github/license-policy.json` currently blocks GPL and AGPL license families and fails on missing or unrecognized dependency license metadata. This starter policy needs owner/legal review before being treated as a definitive license policy. The SBOM audits dependency metadata; it does not detect copied source-code snippets or plagiarism.
+- Lighthouse runs three desktop measurements and compares their medians. A regression over 15%, adjusted by small metric-specific noise floors, fails the gate. Absolute budgets also apply when no baseline is available. These synthetic static-page checks are not a substitute for real classroom-device testing.
+- No lint command is currently defined in `package.json`, so CI does not claim to run a linter. No API keys or other workflow secrets are required.
+
+To make the checks block merges, configure a ruleset or branch protection rule for `main` that requires the `quality`, `security`, and `performance` status checks. Without that repository setting, GitHub Actions reports failures but does not prevent merging.
