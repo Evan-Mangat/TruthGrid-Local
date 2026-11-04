@@ -1,17 +1,18 @@
 :root {
-  --color-bg: #ffffff;
-  --color-surface: #f5f5f5;
-  --color-border: #e0e0e0;
+  --color-bg: #f3f5f4;
+  --color-surface: #ffffff;
+  --color-border: #dce3df;
   --color-primary: #1a1a2e;
   --color-primary-light: #16213e;
   --color-accent: #0f3460;
-  --color-accent-hover: #e94560;
-  --color-text: #1a1a1a;
-  --color-text-muted: #555555;
+  --color-accent-hover: #0b294d;
+  --color-text: #202329;
+  --color-text-muted: #59616b;
   --color-success: #2e7d32;
   --color-warning: #f57c00;
-  --radius: 8px;
-  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --color-focus: #bd633d;
+  --radius: 6px;
+  --shadow: 0 1px 3px rgba(26, 26, 46, 0.06), 0 6px 18px rgba(26, 26, 46, 0.035);
 }
 
 *, *::before, *::after {
@@ -27,6 +28,7 @@ body {
   color: var(--color-text);
   background: var(--color-bg);
   min-height: 100vh;
+  text-rendering: optimizeLegibility;
 }
 
 .app-root {
@@ -37,9 +39,9 @@ body {
 
 /* Shared layout utilities */
 .page {
-  max-width: 760px;
+  max-width: 840px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 2.5rem 1.5rem 4rem;
   width: 100%;
 }
 
@@ -47,20 +49,24 @@ body {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  padding: 1.5rem;
-  margin-bottom: 1rem;
+  padding: 1.35rem 1.5rem;
+  margin-bottom: 1.15rem;
   box-shadow: var(--shadow);
 }
 
 .btn {
-  display: inline-block;
-  padding: 0.6rem 1.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.55rem 1.15rem;
   border-radius: var(--radius);
   border: none;
   font-size: 1rem;
   font-weight: 600;
+  line-height: 1.25;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .btn-primary {
@@ -75,7 +81,7 @@ body {
 .btn-secondary {
   background: transparent;
   color: var(--color-accent);
-  border: 2px solid var(--color-accent);
+  border: 1px solid var(--color-accent);
 }
 
 .btn-secondary:hover {
@@ -95,29 +101,95 @@ label {
 }
 
 input[type="text"],
+input[type="password"],
 textarea {
   width: 100%;
-  padding: 0.6rem 0.8rem;
-  border: 1.5px solid var(--color-border);
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #cbd5d0;
   border-radius: var(--radius);
   font-size: 1rem;
   font-family: inherit;
   background: #fff;
   color: var(--color-text);
   resize: vertical;
+  line-height: 1.55;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 input[type="text"]:focus,
+input[type="password"]:focus,
 textarea:focus {
-  outline: none;
   border-color: var(--color-accent);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(15, 52, 96, 0.13);
 }
 
-h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
-h2 { font-size: 1.3rem; margin-bottom: 0.5rem; }
-h3 { font-size: 1.1rem; margin-bottom: 0.4rem; }
+h1 {
+  margin-bottom: 0.45rem;
+  color: var(--color-primary);
+  font-family: inherit;
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+h2 {
+  margin-bottom: 0.6rem;
+  color: var(--color-primary);
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+h3 {
+  margin-bottom: 0.45rem;
+  color: var(--color-primary);
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+ul,
+ol {
+  padding-left: 1.35rem;
+}
+
+li + li {
+  margin-top: 0.3rem;
+}
+
+a {
+  color: var(--color-accent);
+  text-underline-offset: 0.16em;
+}
+
+a:hover {
+  color: var(--color-accent-hover);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
 
 .muted { color: var(--color-text-muted); font-size: 0.9rem; }
+
+.structure-labels-header {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.structure-labels-copy {
+  min-width: 0;
+}
+
+.structure-labels-toggle {
+  align-self: center;
+  flex: 0 0 auto;
+  min-width: 8rem;
+}
 
 .error-msg {
   color: #c62828;
@@ -127,6 +199,29 @@ h3 { font-size: 1.1rem; margin-bottom: 0.4rem; }
 
 .print-only {
   display: none;
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: 1.25rem 1rem 2.5rem;
+  }
+
+  .card {
+    padding: 1rem;
+    margin-bottom: 0.85rem;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Print View Stylesheet */

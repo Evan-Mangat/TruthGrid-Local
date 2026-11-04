@@ -291,7 +291,7 @@ export default function TeacherSetup({
         }}
         style={isDraggingFile ? { outline: '2px dashed var(--color-accent)', outlineOffset: 2 } : undefined}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
           <label htmlFor="passage">Reading Passage for Students to Analyze <span className="muted">(optional)</span></label>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             <input
@@ -445,15 +445,15 @@ export default function TeacherSetup({
 
       {/* Label customization */}
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
+        <div className="structure-labels-header">
+          <div className="structure-labels-copy">
             <h3>Structure Labels</h3>
             <p className="muted">
               Currently: <strong>{labels.topicSentence}</strong> → <strong>{labels.link}</strong> + <strong>{labels.point}</strong> → <strong>{labels.example}</strong> → <strong>{labels.explanation}</strong> → <strong>{labels.concludingSentence}</strong>
             </p>
           </div>
           <button
-            className="btn btn-secondary"
+            className="btn btn-secondary structure-labels-toggle"
             style={{ fontSize: '0.85rem', padding: '0.4rem 0.9rem' }}
             onClick={() => setShowLabelEdit(v => !v)}
           >

@@ -330,7 +330,7 @@ export default function StudentFlow({ session, onSubmit }) {
             </p>
             <textarea
               id={`link-${i}`}
-              rows={1}
+              rows={2}
               spellCheck={true}
               value={p.link}
               onChange={e => updateField(i, 'link', e.target.value)}
