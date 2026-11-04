@@ -1,37 +1,13 @@
 {
-  "date": "2026-11-01",
+  "date": "2026-11-04",
   "counts": {
     "info": 0,
-    "low": 3,
-    "moderate": 12,
-    "high": 1,
-    "critical": 2,
-    "total": 18
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
   },
   "note": "These findings were present when the baseline was created. Their presence is recorded technical debt, not approval or risk acceptance. Remove entries when the affected dependency is fixed.",
-  "findings": [
-    { "package": "@vitest/mocker", "advisory": "GHSA-82fw-gwwq-j7x9", "severity": "moderate", "title": "Vitest: Path Traversal / Arbitrary File Read via @vitest/mocker Redirect Mock", "url": "https://github.com/advisories/GHSA-82fw-gwwq-j7x9" },
-    { "package": "@vitest/mocker", "advisory": "GHSA-qxg6-89mg-rqv8", "severity": "moderate", "title": "Vitest: Code injection via unauthenticated manual mock registration", "url": "https://github.com/advisories/GHSA-qxg6-89mg-rqv8" },
-    { "package": "deepmerge", "advisory": "GHSA-gcqx-w48m-w2h4", "severity": "low", "title": "deepmerge mergeObject() allows prototype poisoning of returned objects", "url": "https://github.com/advisories/GHSA-gcqx-w48m-w2h4" },
-    { "package": "esbuild", "advisory": "GHSA-67mh-4wv8-2f99", "severity": "moderate", "title": "esbuild enables any website to send any requests to the development server and read the response", "url": "https://github.com/advisories/GHSA-67mh-4wv8-2f99" },
-    { "package": "fast-uri", "advisory": "GHSA-333x-w4r6-6crp", "severity": "low", "title": "fast-uri vulnerable to scheme injection via an unescaped first-segment colon in suffix references", "url": "https://github.com/advisories/GHSA-333x-w4r6-6crp" },
-    { "package": "fast-uri", "advisory": "GHSA-w74x-v6f9-j3xg", "severity": "moderate", "title": "fast-uri vulnerable to URI scheme spoofing via percent-encoded scheme decoding", "url": "https://github.com/advisories/GHSA-w74x-v6f9-j3xg" },
-    { "package": "fast-uri", "advisory": "GHSA-wjr9-j795-jxcr", "severity": "moderate", "title": "fast-uri vulnerable to host confusion via unchecked WHATWG host canonicalization", "url": "https://github.com/advisories/GHSA-wjr9-j795-jxcr" },
-    { "package": "fast-uri", "advisory": "GHSA-xhq7-xmqj-769h", "severity": "low", "title": "fast-uri vulnerable to improper path equivalence in relative reference normalization", "url": "https://github.com/advisories/GHSA-xhq7-xmqj-769h" },
-    { "package": "glob", "advisory": "GHSA-3g3m-2fjr-6pw4", "severity": "moderate", "title": "Glob: AbortSignal cancellation bypass allows post-timeout filesystem traversal", "url": "https://github.com/advisories/GHSA-3g3m-2fjr-6pw4" },
-    { "package": "minimatch", "advisory": "GHSA-g3hv-75wg-m249", "severity": "moderate", "title": "minimatch has potential denial of service via globparts amplification", "url": "https://github.com/advisories/GHSA-g3hv-75wg-m249" },
-    { "package": "serialize-javascript", "advisory": "GHSA-m5mm-p8h7-m29v", "severity": "low", "title": "Serialize JavaScript: Cross-site scripting via unescaped serialized function body", "url": "https://github.com/advisories/GHSA-m5mm-p8h7-m29v" },
-    { "package": "tinypool", "advisory": "GHSA-5gmw-xhrv-c9v3", "severity": "critical", "title": "Tinypool: Prototype Pollution gadget in worker options leads to Remote Code Execution", "url": "https://github.com/advisories/GHSA-5gmw-xhrv-c9v3" },
-    { "package": "tinypool", "advisory": "GHSA-85c8-ppgw-ccpr", "severity": "critical", "title": "Tinypool: Prototype Pollution Gadget to RCE in run() options", "url": "https://github.com/advisories/GHSA-85c8-ppgw-ccpr" },
-    { "package": "vite", "advisory": "GHSA-4w7w-66w2-5vf9", "severity": "moderate", "title": "Vite Vulnerable to Path Traversal in Optimized Deps .map Handling", "url": "https://github.com/advisories/GHSA-4w7w-66w2-5vf9" },
-    { "package": "vite", "advisory": "GHSA-587h-7wmj-h5pm", "severity": "high", "title": "launch-editor fs.existsSync existence check can be bypassed on Windows", "url": "https://github.com/advisories/GHSA-587h-7wmj-h5pm" },
-    { "package": "vite", "advisory": "GHSA-698v-4r3x-3vcv", "severity": "moderate", "title": "launch-editor escapeCmdArgs omits percent escaping on Windows", "url": "https://github.com/advisories/GHSA-698v-4r3x-3vcv" },
-    { "package": "vite", "advisory": "GHSA-9jrq-w75r-8gcw", "severity": "low", "title": "Vite: Cross origin script execution through Vite custom middleware", "url": "https://github.com/advisories/GHSA-9jrq-w75r-8gcw" },
-    { "package": "vite", "advisory": "GHSA-fx2h-pf6j-xcff", "severity": "moderate", "title": "vite server.fs.deny bypass on Windows alternate paths", "url": "https://github.com/advisories/GHSA-fx2h-pf6j-xcff" },
-    { "package": "vite", "advisory": "GHSA-r825-w8mm-5pxw", "severity": "moderate", "title": "launch-editor editor CLI flag misinterpretation causing arbitrary command execution", "url": "https://github.com/advisories/GHSA-r825-w8mm-5pxw" },
-    { "package": "vite", "advisory": "GHSA-rq7h-c2jc-7f22", "severity": "moderate", "title": "Vite could serve files outside server.fs.allow when paths match system paths", "url": "https://github.com/advisories/GHSA-rq7h-c2jc-7f22" },
-    { "package": "vite", "advisory": "GHSA-v6wh-96g9-6wx3", "severity": "moderate", "title": "launch-editor NTLMv2 hash disclosure via UNC path handling on Windows", "url": "https://github.com/advisories/GHSA-v6wh-96g9-6wx3" },
-    { "package": "vitest", "advisory": "GHSA-5xrq-8626-4rwp", "severity": "critical", "title": "When Vitest UI server is listening, arbitrary file can be read and executed", "url": "https://github.com/advisories/GHSA-5xrq-8626-4rwp" },
-    { "package": "vitest", "advisory": "GHSA-82fw-gwwq-j7x9", "severity": "moderate", "title": "Vitest: Path Traversal / Arbitrary File Read via @vitest/mocker Redirect Mock", "url": "https://github.com/advisories/GHSA-82fw-gwwq-j7x9" }
-  ]
+  "findings": []
 }
