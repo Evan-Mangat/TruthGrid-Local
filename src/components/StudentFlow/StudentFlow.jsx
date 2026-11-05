@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { scoreSimilarity } from '../../utils/similarity'
+import { saveDraftVersion } from '../../utils/draftHistory'
 
 const DRAFT_STORAGE_KEY = 'truthgrid_active_draft'
+const SESSION_ID_STORAGE_KEY = 'truthgrid_session_id'
 
 function emptyPoint() {
   return { link: '', point: '', example: '', explanation: '' }
@@ -41,8 +43,23 @@ export function clearActiveDraft() {
   try {
     sessionStorage.removeItem(DRAFT_STORAGE_KEY)
     localStorage.removeItem(DRAFT_STORAGE_KEY)
+    sessionStorage.removeItem(SESSION_ID_STORAGE_KEY)
+    localStorage.removeItem(SESSION_ID_STORAGE_KEY)
   } catch (err) {
     console.warn('Could not clear draft:', err)
+  }
+}
+
+function getOrCreateSessionId() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_ID_STORAGE_KEY) || localStorage.getItem(SESSION_ID_STORAGE_KEY)
+    if (stored) return stored
+    const id = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    sessionStorage.setItem(SESSION_ID_STORAGE_KEY, id)
+    localStorage.setItem(SESSION_ID_STORAGE_KEY, id)
+    return id
+  } catch {
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`
   }
 }
 
@@ -68,7 +85,13 @@ export default function StudentFlow({ session, onSubmit }) {
   const [passageExpanded, setPassageExpanded] = useState(true)
   const [documentUrl, setDocumentUrl] = useState('')
   const [lastSavedAt, setLastSavedAt] = useState(null)
+  const [draftVersionCount, setDraftVersionCount] = useState(0)
+  const [isSavingDraft, setIsSavingDraft] = useState(false)
+  const [lastEditedStep, setLastEditedStep] = useState('Topic Sentence')
   const isSubmittingRef = useRef(false)
+  const sessionIdRef = useRef(getOrCreateSessionId())
+  const idleTimerRef = useRef(null)
+  const lastVersionSnapshotRef = useRef(null)
 
   useEffect(() => {
     if (!originalDocument?.data) {
@@ -79,6 +102,47 @@ export default function StudentFlow({ session, onSubmit }) {
     setDocumentUrl(url)
     return () => URL.revokeObjectURL(url)
   }, [originalDocument])
+
+  function buildSnapshot() {
+    return { topicSentence, sharedPoint, points, concludingSentence, labels: session.labels }
+  }
+
+  const saveVersionSnapshot = useCallback(async (trigger, stepName) => {
+    const snapshot = buildSnapshot()
+    const snapshotKey = JSON.stringify(snapshot)
+    if (snapshotKey === lastVersionSnapshotRef.current) return
+    if (!topicSentence.trim() && !sharedPoint.trim() && !concludingSentence.trim() &&
+        !points.some(p => p.link || p.point || p.example || p.explanation)) return
+    setIsSavingDraft(true)
+    try {
+      await saveDraftVersion({
+        sessionId: sessionIdRef.current,
+        studentName,
+        studentNumber: session.studentNumber,
+        stepName: stepName || lastEditedStep,
+        trigger,
+        snapshot,
+      })
+      lastVersionSnapshotRef.current = snapshotKey
+      setDraftVersionCount(c => c + 1)
+    } catch (err) {
+      console.warn('Could not save draft version:', err)
+    } finally {
+      setIsSavingDraft(false)
+    }
+  }, [topicSentence, sharedPoint, concludingSentence, points, session.labels, studentName, session.studentNumber, lastEditedStep])
+
+  // Reset idle-save timer on any content change
+  useEffect(() => {
+    if (!hasUnsavedContent) return
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+    idleTimerRef.current = setTimeout(() => {
+      saveVersionSnapshot('idle')
+    }, 30000)
+    return () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+    }
+  }, [topicSentence, sharedPoint, concludingSentence, points])
 
   // Check if student has written anything
   const hasUnsavedContent =
@@ -127,6 +191,7 @@ export default function StudentFlow({ session, onSubmit }) {
       delete e[`${index}-${field}`]
       return e
     })
+    setLastEditedStep(`${labels[field] || field} — Section ${index + 1}`)
   }
 
   function validate() {
@@ -142,7 +207,7 @@ export default function StudentFlow({ session, onSubmit }) {
     return e
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const e = validate()
     if (Object.keys(e).length) {
       setErrors(e)
@@ -150,6 +215,8 @@ export default function StudentFlow({ session, onSubmit }) {
     }
 
     isSubmittingRef.current = true
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+    await saveVersionSnapshot('submit', 'Final Submission')
     const submittedPoints = isLiteraryAnalysis
       ? points.map(point => ({ ...point, point: sharedPoint }))
       : points
@@ -203,21 +270,33 @@ export default function StudentFlow({ session, onSubmit }) {
           </p>
         </div>
 
-        {lastSavedAt && (
-          <div style={{
-            fontSize: '0.8rem',
-            color: 'var(--color-success)',
-            background: 'rgba(46, 125, 50, 0.1)',
-            padding: '0.25rem 0.6rem',
-            borderRadius: '4px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-            fontWeight: 500,
-          }}>
-            <span>●</span> Draft autosaved locally at {lastSavedAt}
-          </div>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {lastSavedAt && (
+            <div style={{
+              fontSize: '0.8rem',
+              color: 'var(--color-success)',
+              background: 'rgba(46, 125, 50, 0.1)',
+              padding: '0.25rem 0.6rem',
+              borderRadius: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              fontWeight: 500,
+            }}>
+              <span>●</span> Autosaved at {lastSavedAt}
+            </div>
+          )}
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ fontSize: '0.8rem', padding: '0.25rem 0.65rem' }}
+            disabled={isSavingDraft || !hasUnsavedContent}
+            onClick={() => saveVersionSnapshot('manual')}
+            title="Save a version of your current draft for the teacher to review"
+          >
+            {isSavingDraft ? 'Saving…' : draftVersionCount > 0 ? `Save Draft (${draftVersionCount} saved)` : 'Save Draft'}
+          </button>
+        </div>
       </div>
 
       {isLiteraryAnalysis && (
@@ -232,6 +311,7 @@ export default function StudentFlow({ session, onSubmit }) {
             value={sharedPoint}
             onChange={event => {
               setSharedPoint(event.target.value)
+              setLastEditedStep(`Central ${labels.point}`)
               setErrors(previous => { const next = { ...previous }; delete next.sharedPoint; return next })
             }}
             placeholder={`e.g. [Topic or technique] reveals [your central idea].`}
@@ -309,6 +389,7 @@ export default function StudentFlow({ session, onSubmit }) {
           value={topicSentence}
           onChange={e => {
             setTopicSentence(e.target.value)
+            setLastEditedStep(labels.topicSentence || 'Topic Sentence')
             setErrors(prev => { const ne = { ...prev }; delete ne.topicSentence; return ne })
           }}
           placeholder="e.g. In [title], [author] uses [technique] to develop the idea that [central point]."
@@ -412,6 +493,7 @@ export default function StudentFlow({ session, onSubmit }) {
           value={concludingSentence}
           onChange={e => {
             setConcludingSentence(e.target.value)
+            setLastEditedStep(labels.concludingSentence || 'Concluding Sentence')
             setErrors(prev => { const ne = { ...prev }; delete ne.concludingSentence; return ne })
           }}
           placeholder="Write your concluding sentence here…"

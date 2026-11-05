@@ -2,16 +2,28 @@
 import { openDB } from 'idb'
 
 const DB_NAME = 'truthgrid'
-const DB_VERSION = 1
+const DB_VERSION = 2
 const STORE = 'responses'
+export const DRAFT_VERSIONS_STORE = 'draftVersions'
 
-async function getDb() {
+export async function getDb() {
   return openDB(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains(STORE)) {
+    upgrade(db, oldVersion) {
+      if (oldVersion < 1) {
         const store = db.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true })
         store.createIndex('submittedAt', 'submittedAt')
         store.createIndex('studentName', 'studentName')
+      }
+      if (oldVersion < 2) {
+        if (!db.objectStoreNames.contains(STORE)) {
+          const store = db.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true })
+          store.createIndex('submittedAt', 'submittedAt')
+          store.createIndex('studentName', 'studentName')
+        }
+        const vs = db.createObjectStore(DRAFT_VERSIONS_STORE, { keyPath: 'id', autoIncrement: true })
+        vs.createIndex('sessionId', 'sessionId')
+        vs.createIndex('studentName', 'studentName')
+        vs.createIndex('timestamp', 'timestamp')
       }
     },
   })

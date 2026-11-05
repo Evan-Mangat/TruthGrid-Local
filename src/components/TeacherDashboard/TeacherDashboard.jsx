@@ -41,7 +41,7 @@ function ScoreBadge({ score }) {
   )
 }
 
-export default function TeacherDashboard({ onBack, onPrintBlankWorksheet, onPrintStudentResponse }) {
+export default function TeacherDashboard({ onBack, onPrintBlankWorksheet, onPrintStudentResponse, onViewDraftHistory }) {
   const [responses, setResponses] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -128,6 +128,11 @@ export default function TeacherDashboard({ onBack, onPrintBlankWorksheet, onPrin
           >
             📥 Export All to CSV
           </button>
+          {onViewDraftHistory && (
+            <button className="btn btn-secondary" onClick={onViewDraftHistory} title="View student draft version history">
+              📋 Draft History
+            </button>
+          )}
           {onPrintBlankWorksheet && (
             <button className="btn btn-secondary" onClick={onPrintBlankWorksheet}>
               🖨️ Blank Worksheet

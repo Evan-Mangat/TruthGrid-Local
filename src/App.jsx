@@ -5,6 +5,7 @@ import Results from './components/Results/Results'
 import TeacherDashboard from './components/TeacherDashboard/TeacherDashboard'
 import PrintWorksheet from './components/PrintWorksheet/PrintWorksheet'
 import TeacherAccess from './components/TeacherAccess/TeacherAccess'
+import DraftHistory from './components/DraftHistory/DraftHistory'
 
 // Top-level app state machine:
 // 'setup' | 'writing' | 'results' | 'dashboard' | 'print_worksheet'
@@ -111,7 +112,12 @@ export default function App() {
           onBack={() => setScreen(dashboardReturnScreen)}
           onPrintBlankWorksheet={() => handlePrintBlankWorksheet(teacherConfig)}
           onPrintStudentResponse={handlePrintStudentResponse}
+          onViewDraftHistory={() => setScreen('draft_history')}
         />
+      )}
+
+      {screen === 'draft_history' && (
+        <DraftHistory onBack={() => setScreen('dashboard')} />
       )}
 
       {screen === 'dashboard_access' && (
