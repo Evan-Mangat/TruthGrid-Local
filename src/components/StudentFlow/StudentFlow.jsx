@@ -207,7 +207,7 @@ export default function StudentFlow({ session, onSubmit }) {
     return e
   }
 
-  async function handleSubmit() {
+  function handleSubmit() {
     const e = validate()
     if (Object.keys(e).length) {
       setErrors(e)
@@ -216,7 +216,8 @@ export default function StudentFlow({ session, onSubmit }) {
 
     isSubmittingRef.current = true
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
-    await saveVersionSnapshot('submit', 'Final Submission')
+    // Fire-and-forget — don't block submission on draft save
+    saveVersionSnapshot('submit', 'Final Submission')
     const submittedPoints = isLiteraryAnalysis
       ? points.map(point => ({ ...point, point: sharedPoint }))
       : points
