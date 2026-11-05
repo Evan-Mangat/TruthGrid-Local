@@ -36,6 +36,7 @@ import json
 import shutil
 import argparse
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import List, Dict, Any, Tuple, Optional
 
@@ -115,29 +116,33 @@ class OfflineOCR:
             pages = convert_from_path(pdf_path)
             if pages:
                 return pages
-        except Exception:
+        except Exception:  # noqa: S110
             pass
 
         # Method 2: macOS built-in 'sips' fallback (built into every Mac, zero install required)
-        if sys.platform == "darwin" and shutil.which("sips"):
-            temp_out = f"/tmp/truthgrid_ocr_{os.getpid()}_{int(time.time())}.png"
-            res = subprocess.run(
-                ["sips", "-s", "format", "png", pdf_path, "--out", temp_out],
-                capture_output=True,
-                text=True,
-            )
-            if res.returncode == 0 and os.path.exists(temp_out):
-                try:
+        sips_cmd = shutil.which("sips") or "/usr/bin/sips"
+        if sys.platform == "darwin" and os.path.exists(sips_cmd):
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tf:
+                temp_out = tf.name
+            try:
+                res = subprocess.run(  # noqa: S603
+                    [sips_cmd, "-s", "format", "png", pdf_path, "--out", temp_out],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                if res.returncode == 0 and os.path.exists(temp_out):
                     img = Image.open(temp_out)
                     img.load()  # Load image data into memory
-                    # Clean up temp file
+                    return [img]
+            except Exception:  # noqa: S110
+                pass
+            finally:
+                if os.path.exists(temp_out):
                     try:
                         os.remove(temp_out)
                     except OSError:
                         pass
-                    return [img]
-                except Exception:
-                    pass
 
         raise RuntimeError(
             f"Could not convert PDF '{pdf_path}' to images.\n"

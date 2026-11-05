@@ -266,7 +266,7 @@ export default function StudentFlow({ session, onSubmit }) {
           <p className="muted" style={{ marginBottom: '0.75rem' }}>
             OCR can misread words or punctuation. Double-check the extracted passage against this original scan before using it as evidence.
           </p>
-          <a href={documentUrl} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginBottom: '0.75rem' }}>
+          <a href={documentUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginBottom: '0.75rem' }}>
             Open original file: {originalDocument.name}
           </a>
           {originalDocument.type === 'application/pdf' ? (
