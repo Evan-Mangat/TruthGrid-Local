@@ -43,6 +43,10 @@ export default function App() {
     setScreen('writing')
   }
 
+  function handleSessionUpdate(updates) {
+    setSession(prev => ({ ...prev, ...updates }))
+  }
+
   function handleSubmission(submissionData) {
     setSubmission(submissionData)
     setSubmissionIsStored(false)
@@ -99,6 +103,7 @@ export default function App() {
           session={session}
           onSubmit={handleSubmission}
           onBack={() => setScreen('setup')}
+          onSessionUpdate={handleSessionUpdate}
         />
       )}
 

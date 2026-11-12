@@ -116,7 +116,7 @@ function getOrCreateSessionId() {
   }
 }
 
-export default function StudentFlow({ session, onSubmit, onBack }) {
+export default function StudentFlow({ session, onSubmit, onBack, onSessionUpdate }) {
   const { passage, studentName, studentNumber, labels, startedAt } = session
   const originalDocument = session.originalDocument
   const prompt = session.prompt || ''
@@ -138,6 +138,14 @@ export default function StudentFlow({ session, onSubmit, onBack }) {
 
   const [errors, setErrors] = useState({})
   const [passageExpanded, setPassageExpanded] = useState(true)
+
+  // ── Edit Info panel state ──────────────────────────────────────────────────
+  const [showEditInfo, setShowEditInfo] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editNumber, setEditNumber] = useState('')
+  const [editPassage, setEditPassage] = useState('')
+  const [editPrompt, setEditPrompt] = useState('')
+  const [editInfoError, setEditInfoError] = useState('')
   const [documentUrl, setDocumentUrl] = useState('')
   const [lastSavedAt, setLastSavedAt] = useState(null)
   const [draftVersionCount, setDraftVersionCount] = useState(0)
@@ -246,6 +254,32 @@ export default function StudentFlow({ session, onSubmit, onBack }) {
       setLastSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
     }
   }, [points, topicSentence, sharedPoint, concludingSentence, essayPlan, studentName, studentNumber, numPoints, hasUnsavedContent, session])
+
+  function openEditInfo() {
+    setEditName(studentName)
+    setEditNumber(studentNumber || '')
+    setEditPassage(passage)
+    setEditPrompt(prompt)
+    setEditInfoError('')
+    setShowEditInfo(true)
+  }
+
+  function handleSaveEditInfo() {
+    if (!editName.trim()) {
+      setEditInfoError('Student name is required.')
+      return
+    }
+    if (onSessionUpdate) {
+      onSessionUpdate({
+        studentName: editName.trim(),
+        studentNumber: editNumber.trim(),
+        passage: editPassage,
+        prompt: editPrompt,
+      })
+    }
+    setShowEditInfo(false)
+    setEditInfoError('')
+  }
 
   const handleBackToSetup = useCallback(() => {
     saveDraftToStorage({
@@ -475,11 +509,20 @@ export default function StudentFlow({ session, onSubmit, onBack }) {
               className="btn btn-secondary"
               style={{ fontSize: '0.82rem', padding: '0.35rem 0.75rem' }}
               onClick={handleBackToSetup}
-              title="Return to setup to edit your name, student number, or reading passage"
+              title="Return to setup"
             >
-              ← Edit Student Info / Setup
+              ← Back
             </button>
           )}
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ fontSize: '0.82rem', padding: '0.35rem 0.75rem' }}
+            onClick={openEditInfo}
+            title="Edit student name, number, reading passage, or writing prompt"
+          >
+            ✏️ Edit Info
+          </button>
           <div>
             <h1 style={{ margin: 0 }}>{isLiteraryAnalysis ? 'Literary Analysis' : 'Essay'}</h1>
             <p className="muted" style={{ margin: '0.15rem 0 0' }}>
@@ -526,6 +569,123 @@ export default function StudentFlow({ session, onSubmit, onBack }) {
           </button>
         </div>
       </div>
+
+      {/* ── Edit Info Panel ────────────────────────────────────────────────── */}
+      {showEditInfo && (
+        <div
+          className="card"
+          aria-labelledby="edit-info-heading"
+          style={{
+            borderLeft: '4px solid #0284c7',
+            marginBottom: '1rem',
+            background: '#f0f9ff',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 id="edit-info-heading" style={{ margin: 0, color: '#0369a1' }}>✏️ Edit Session Info</h3>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ fontSize: '0.8rem', padding: '0.25rem 0.6rem' }}
+              onClick={() => setShowEditInfo(false)}
+            >
+              Cancel ✕
+            </button>
+          </div>
+
+          <p className="muted" style={{ marginBottom: '1rem', fontSize: '0.88rem' }}>
+            Changes apply immediately to this writing session. Your essay content is not affected.
+          </p>
+
+          <div style={{ display: 'grid', gap: '0.85rem' }}>
+            {/* Student Name */}
+            <div>
+              <label htmlFor="sf-edit-name" style={{ fontWeight: 600 }}>
+                Student Name <span style={{ color: '#dc2626', fontSize: '0.85rem' }}>*</span>
+              </label>
+              <input
+                id="sf-edit-name"
+                type="text"
+                value={editName}
+                onChange={e => { setEditName(e.target.value); setEditInfoError('') }}
+                placeholder="e.g. Alex Morgan"
+                autoComplete="off"
+                style={{ marginTop: '0.3rem', display: 'block', width: '100%' }}
+              />
+            </div>
+
+            {/* Student Number */}
+            <div>
+              <label htmlFor="sf-edit-number" style={{ fontWeight: 600 }}>
+                Student Number <span className="muted">(optional)</span>
+              </label>
+              <input
+                id="sf-edit-number"
+                type="text"
+                value={editNumber}
+                onChange={e => setEditNumber(e.target.value)}
+                placeholder="e.g. 123456"
+                autoComplete="off"
+                style={{ marginTop: '0.3rem', display: 'block', width: '100%' }}
+              />
+            </div>
+
+            {/* Reading Passage */}
+            <div>
+              <label htmlFor="sf-edit-passage" style={{ fontWeight: 600 }}>
+                Reading Passage <span className="muted">(optional — leave blank for open prompt)</span>
+              </label>
+              <textarea
+                id="sf-edit-passage"
+                rows={6}
+                value={editPassage}
+                onChange={e => setEditPassage(e.target.value)}
+                placeholder="Paste the source text students will analyze, or leave blank for an open prompt…"
+                style={{ marginTop: '0.3rem', display: 'block', width: '100%' }}
+              />
+            </div>
+
+            {/* Writing Prompt */}
+            <div>
+              <label htmlFor="sf-edit-prompt" style={{ fontWeight: 600 }}>
+                Writing Prompt / Task <span className="muted">(optional)</span>
+              </label>
+              <textarea
+                id="sf-edit-prompt"
+                rows={2}
+                value={editPrompt}
+                onChange={e => setEditPrompt(e.target.value)}
+                placeholder="e.g. Explain how the author uses [technique] to develop the idea that [central point]."
+                style={{ marginTop: '0.3rem', display: 'block', width: '100%' }}
+              />
+            </div>
+          </div>
+
+          {editInfoError && (
+            <p className="error-msg" role="alert" style={{ marginTop: '0.75rem' }}>
+              {editInfoError}
+            </p>
+          )}
+
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ padding: '0.5rem 1.1rem' }}
+              onClick={handleSaveEditInfo}
+            >
+              Save Changes
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setShowEditInfo(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Reading passage (only if reference passage was assigned) */}
       {passage && passage.trim() ? (

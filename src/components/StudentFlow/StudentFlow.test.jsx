@@ -343,7 +343,85 @@ describe('StudentFlow scan reference', () => {
       />
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /Edit Student Info \/ Setup/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Back/ }))
     expect(onBack).toHaveBeenCalledOnce()
+  })
+
+  it('opens the Edit Info panel and saves updated student name via onSessionUpdate', () => {
+    const onSessionUpdate = vi.fn()
+    render(
+      <StudentFlow
+        session={{
+          passage: 'Original passage',
+          studentName: 'Old Name',
+          studentNumber: '999',
+          prompt: 'Original prompt',
+          labels: {
+            topicSentence: 'Topic Sentence',
+            link: 'Link',
+            point: 'Point',
+            example: 'Evidence',
+            explanation: 'Commentary',
+            concludingSentence: 'Concluding Sentence',
+          },
+          mode: 'essay',
+          numPoints: 3,
+        }}
+        onSubmit={vi.fn()}
+        onSessionUpdate={onSessionUpdate}
+      />
+    )
+
+    // Open the edit panel
+    fireEvent.click(screen.getByRole('button', { name: /Edit Info/ }))
+    expect(screen.getByRole('heading', { name: /Edit Session Info/ })).toBeInTheDocument()
+
+    // The name field should be pre-filled with the current student name
+    const nameInput = screen.getByLabelText(/Student Name/)
+    expect(nameInput).toHaveValue('Old Name')
+
+    // Change the name
+    fireEvent.change(nameInput, { target: { value: 'New Name' } })
+
+    // Save changes
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }))
+
+    expect(onSessionUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ studentName: 'New Name' })
+    )
+
+    // Panel should close after save
+    expect(screen.queryByRole('heading', { name: /Edit Session Info/ })).not.toBeInTheDocument()
+  })
+
+  it('shows an error and blocks save when student name is cleared in Edit Info panel', () => {
+    const onSessionUpdate = vi.fn()
+    render(
+      <StudentFlow
+        session={{
+          passage: '',
+          studentName: 'Kim Student',
+          labels: {
+            topicSentence: 'Topic Sentence',
+            link: 'Link',
+            point: 'Point',
+            example: 'Evidence',
+            explanation: 'Commentary',
+            concludingSentence: 'Concluding Sentence',
+          },
+          mode: 'essay',
+          numPoints: 3,
+        }}
+        onSubmit={vi.fn()}
+        onSessionUpdate={onSessionUpdate}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /Edit Info/ }))
+    fireEvent.change(screen.getByLabelText(/Student Name/), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/Student name is required/)
+    expect(onSessionUpdate).not.toHaveBeenCalled()
   })
 })
