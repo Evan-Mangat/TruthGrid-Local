@@ -69,6 +69,7 @@ export default function StudentFlow({ session, onSubmit }) {
   const prompt = session.prompt || ''
   const numPoints = 3
   const isLiteraryAnalysis = session.mode === 'literary_analysis'
+  // Essay and Literary Analysis share this writing page; saved draft versions are available in Dashboard > Draft History.
 
   // Initialize from saved draft if available, or empty points
   const savedDraft = loadSavedDraft(numPoints)
@@ -260,9 +261,9 @@ export default function StudentFlow({ session, onSubmit }) {
     <div className="page">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
         <div>
-          <h1>Literary Analysis</h1>
+          <h1>{isLiteraryAnalysis ? 'Literary Analysis' : 'Essay'}</h1>
           <p className="muted">
-            {studentName} {studentNumber ? `(#${studentNumber})` : ''} · {isLiteraryAnalysis ? 'Literary Analysis' : 'Essay'}
+            {studentName} {studentNumber ? `(#${studentNumber})` : ''}
             {!(passage && passage.trim()) && (
               <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', background: '#eceff1', color: '#455a64', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 600 }}>
                 Open Prompt Mode
@@ -286,6 +287,11 @@ export default function StudentFlow({ session, onSubmit }) {
             }}>
               <span>●</span> Autosaved at {lastSavedAt}
             </div>
+          )}
+          {draftVersionCount > 0 && (
+            <p className="muted" role="status" style={{ fontSize: '0.8rem' }}>
+              Saved draft versions are available in Dashboard → Draft History.
+            </p>
           )}
           <button
             type="button"

@@ -110,7 +110,8 @@ export default function TeacherDashboard({ onBack, onPrintBlankWorksheet, onPrin
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.5rem' }}>
         <div>
-          <h1>Teacher Dashboard</h1>
+          {/* Previous title: Teacher Dashboard. */}
+          <h1>Dashboard</h1>
           <p className="muted">
             All student responses stored locally on this device ({totalSubmissions} total)
           </p>

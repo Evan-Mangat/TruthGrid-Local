@@ -6,6 +6,21 @@ import StudentFlow from './StudentFlow'
 const labels = { point: 'Point', example: 'Example', explanation: 'Explanation' }
 
 describe('StudentFlow scan reference', () => {
+  it.each([
+    ['essay', 'Essay', 'Literary Analysis'],
+    ['literary_analysis', 'Literary Analysis', 'Essay'],
+  ])('uses only the %s format name in the page title', (mode, expectedTitle, otherTitle) => {
+    render(
+      <StudentFlow
+        session={{ passage: '', studentName: 'Alex Student', labels, mode }}
+        onSubmit={vi.fn()}
+      />
+    )
+
+    expect(screen.getByRole('heading', { level: 1, name: expectedTitle })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 1, name: otherTitle })).not.toBeInTheDocument()
+  })
+
   it('shows OCR text, the verification disclaimer, and the original uploaded image', () => {
     const data = new TextEncoder().encode('image').buffer
     Object.defineProperty(URL, 'createObjectURL', {

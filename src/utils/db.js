@@ -49,3 +49,13 @@ export async function clearAllResponses() {
   const db = await getDb()
   return db.clear(STORE)
 }
+
+export async function clearAllLocalWork() {
+  const db = await getDb()
+  const tx = db.transaction([STORE, DRAFT_VERSIONS_STORE], 'readwrite')
+  await Promise.all([
+    tx.objectStore(STORE).clear(),
+    tx.objectStore(DRAFT_VERSIONS_STORE).clear(),
+  ])
+  await tx.done
+}

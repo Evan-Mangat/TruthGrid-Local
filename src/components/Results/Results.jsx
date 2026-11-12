@@ -45,6 +45,7 @@ function ScoreBadge({ score }) {
 
 export default function Results({ submission, session, onReset, onNavigateToDashboard, saveOnMount = true }) {
   const { points, similarityScores, labels, studentName, studentNumber, submittedAt, passage, topicSentence, concludingSentence } = submission
+  const responseType = submission.mode === 'literary_analysis' ? 'Literary Analysis' : 'Essay'
 
   const [saveStatus, setSaveStatus] = useState('saving') // 'saving' | 'saved' | 'error'
   const [saveErrorMessage, setSaveErrorMessage] = useState(null)
@@ -116,7 +117,7 @@ export default function Results({ submission, session, onReset, onNavigateToDash
     <div className="page results-page">
       {/* Printable Header (Visible only when printed) */}
       <div className="print-only" style={{ marginBottom: '1.5rem', borderBottom: '2px solid #000', paddingBottom: '0.75rem' }}>
-        <h1 style={{ fontSize: '1.6rem', marginBottom: '0.2rem' }}>TruthGrid Literary Analysis Response</h1>
+        <h1 style={{ fontSize: '1.6rem', marginBottom: '0.2rem' }}>TruthGrid {responseType} Response</h1>
         <p style={{ fontSize: '0.95rem' }}>
           <strong>Student:</strong> {studentName} {studentNumber ? `(#${studentNumber})` : ''} &nbsp;|&nbsp;{' '}
           <strong>Date:</strong> {new Date(submittedAt).toLocaleString()}
@@ -138,13 +139,14 @@ export default function Results({ submission, session, onReset, onNavigateToDash
         </div>
 
         {/* Action buttons for print / dashboard */}
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn btn-secondary" onClick={() => window.print()} title="Print this student's response">
-            🖨️ Print Response
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button className="btn btn-primary" onClick={() => window.print()} title="Print this report or choose Save as PDF">
+            🖨️ Print and Save Report to Submit to Teacher
           </button>
           {onNavigateToDashboard && (
             <button className="btn btn-secondary" onClick={onNavigateToDashboard}>
-              Teacher Dashboard
+              {/* Previous label: Teacher Dashboard. */}
+              Dashboard
             </button>
           )}
         </div>
@@ -188,9 +190,20 @@ export default function Results({ submission, session, onReset, onNavigateToDash
       )}
 
       {saveStatus === 'saved' && (
-        <div className="no-print" style={{ marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--color-success)', fontWeight: 500 }}>
-          ✓ Response saved securely to local device storage.
-        </div>
+        <section
+          className="card no-print"
+          role="status"
+          aria-labelledby="submission-saved-heading"
+          style={{ background: '#e8f5e9', borderColor: '#a5d6a7', borderLeft: '5px solid var(--color-success)', marginBottom: '1.25rem' }}
+        >
+          <h2 id="submission-saved-heading" style={{ color: 'var(--color-success)', marginBottom: '0.35rem' }}>
+            ✓ Response saved
+          </h2>
+          <p style={{ fontSize: '1rem', marginBottom: '0.3rem' }}>
+            Saved on local device storage. You can access your work through the Dashboard after submission.
+          </p>
+          <p className="muted">To give your teacher a copy, print the report and choose Print or Save as PDF.</p>
+        </section>
       )}
 
       {/* Text engagement indicator (or open prompt note) */}
@@ -286,8 +299,19 @@ export default function Results({ submission, session, onReset, onNavigateToDash
       </div>
 
       <div className="no-print" style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <p className="muted" style={{ textAlign: 'center' }}>
+          Need to hand in a copy? Print the report for your teacher, or open Dashboard to find saved work.
+        </p>
+        <button className="btn btn-primary" style={{ width: '100%', padding: '0.75rem' }} onClick={() => window.print()} title="Print this report or choose Save as PDF">
+          🖨️ Print and Save Report to Submit to Teacher
+        </button>
+        {onNavigateToDashboard && (
+          <button className="btn btn-secondary" style={{ width: '100%', padding: '0.75rem' }} onClick={onNavigateToDashboard}>
+            Go to Dashboard
+          </button>
+        )}
         <button className="btn btn-secondary" style={{ width: '100%', padding: '0.75rem' }} onClick={onReset} disabled={saveStatus === 'error'} title={saveStatus === 'error' ? 'Save or copy the response before starting another student session.' : undefined}>
-          Next Student Session (Reset Device)
+          Start a New Session
         </button>
       </div>
     </div>

@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { clearTeacherPasscode, hasTeacherPasscode, verifyTeacherPasscode } from '../../utils/teacherAccess'
-import { clearAllResponses } from '../../utils/db'
-import { clearActiveDraft } from '../StudentFlow/StudentFlow'
+// Previous destructive recovery helpers retained for reference, but not used:
+// import { clearAllLocalWork } from '../../utils/db'
+// import { clearActiveDraft } from '../StudentFlow/StudentFlow'
 
 export default function TeacherAccess({ onUnlock, onCancel, onRecoveryComplete }) {
   const [passcode, setPasscode] = useState('')
@@ -30,19 +31,20 @@ export default function TeacherAccess({ onUnlock, onCancel, onRecoveryComplete }
   async function handleRecovery(event) {
     event.preventDefault()
     setError('')
-    if (confirmation !== 'ERASE') {
-      setError('Type ERASE exactly to confirm the permanent deletion.')
+    if (confirmation !== 'RESET') {
+      setError('Type RESET exactly to confirm resetting the Dashboard passcode.')
       return
     }
 
     setIsWorking(true)
     try {
-      await clearAllResponses()
-      clearActiveDraft()
+      // Previous destructive behavior is intentionally disabled so homework essays and drafts survive passcode recovery:
+      // await clearAllLocalWork()
+      // clearActiveDraft()
       clearTeacherPasscode()
       onRecoveryComplete()
     } catch {
-      setError('Could not clear the saved responses. The data and passcode have not been reset.')
+      setError('Could not reset the Dashboard passcode. Saved essays and drafts remain unchanged.')
     } finally {
       setIsWorking(false)
     }
@@ -51,14 +53,15 @@ export default function TeacherAccess({ onUnlock, onCancel, onRecoveryComplete }
   return (
     <main className="page">
       <section className="card" aria-labelledby="teacher-access-heading">
-        <h1 id="teacher-access-heading">Teacher Dashboard</h1>
+        {/* Previous title: Teacher Dashboard. */}
+        <h1 id="teacher-access-heading">Dashboard</h1>
         {showRecovery ? (
           <form onSubmit={handleRecovery}>
             <h2>Forgot the passcode?</h2>
             <p role="alert" style={{ color: '#b71c1c', marginBottom: '1rem' }}>
-              Recovery permanently deletes every saved student response and uploaded scan on this device, then removes the dashboard passcode. This cannot be undone.
+              This resets only the Dashboard passcode. Saved essays, uploaded scans, draft-history versions, and the active draft will remain on this device. After reset, return to Setup and create a new passcode. Until then, the Dashboard is not protected by a passcode.
             </p>
-            <label htmlFor="recovery-confirmation">Type ERASE to confirm</label>
+            <label htmlFor="recovery-confirmation">Type RESET to confirm</label>
             <input
               id="recovery-confirmation"
               value={confirmation}
@@ -67,7 +70,7 @@ export default function TeacherAccess({ onUnlock, onCancel, onRecoveryComplete }
             />
             {error && <p role="alert" className="error-msg">{error}</p>}
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-              <button className="btn btn-primary" type="submit" disabled={isWorking}>Erase data and reset</button>
+              <button className="btn btn-primary" type="submit" disabled={isWorking}>Reset passcode and keep my work</button>
               <button className="btn btn-secondary" type="button" onClick={() => { setShowRecovery(false); setError('') }}>Cancel</button>
             </div>
           </form>

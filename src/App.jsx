@@ -75,7 +75,8 @@ export default function App() {
   }
 
   function handleTeacherRecovery() {
-    clearActiveDraft()
+    // Keep active homework drafts during passcode recovery; only the Dashboard passcode is reset.
+    // Previous behavior cleared the draft here: clearActiveDraft()
     setSubmission(null)
     setSubmissionIsStored(false)
     setSession(null)

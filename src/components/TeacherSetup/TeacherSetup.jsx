@@ -128,7 +128,7 @@ export default function TeacherSetup({
       setCurrentTeacherPasscode('')
       setNewTeacherPasscode('')
       setConfirmTeacherPasscode('')
-      setAccessMessage('Teacher dashboard passcode saved on this device.')
+      setAccessMessage('Dashboard passcode saved. Changing it does not delete saved essays or draft versions.')
     } catch (error) {
       setAccessError(error.message || 'Could not save the teacher passcode.')
     } finally {
@@ -235,21 +235,25 @@ export default function TeacherSetup({
               style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}
               onClick={onNavigateToDashboard}
             >
-              📊 Teacher Dashboard
+              {/* Previous label: Teacher Dashboard. */}
+              📊 Dashboard
             </button>
           )}
         </div>
       </div>
 
       <section className="card" aria-labelledby="teacher-access-setup-heading">
-        <h2 id="teacher-access-setup-heading">Teacher Dashboard Access</h2>
+        {/* Previous heading: Teacher Dashboard Access. */}
+        <h2 id="teacher-access-setup-heading">Dashboard passcode</h2>
         <p className="muted" style={{ marginBottom: '0.75rem' }}>
-          Set this before students use the shared device. It blocks casual dashboard access, but is not strong security against someone who can inspect or change the browser app. Forgetting the code requires erasing saved responses to reset it.
+          To open Dashboard later and review saved essays or draft versions, set a passcode before students begin. Student work and drafts are saved locally whether or not a passcode is set; the passcode only gates Dashboard access. Changing or resetting the passcode does not delete saved essays or drafts. This is a casual privacy barrier, not strong security against someone who can inspect or change the browser app. After a forgotten-passcode reset, set a new code to protect Dashboard access again.
         </p>
         {accessConfigured && !showAccessSetup ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <strong style={{ color: 'var(--color-success)' }}>Passcode set on this device</strong>
-            <button className="btn btn-secondary" type="button" onClick={() => { setShowAccessSetup(true); setAccessMessage(''); setAccessError('') }}>Change passcode</button>
+            {accessMessage && <p role="status" style={{ color: 'var(--color-success)', width: '100%' }}>{accessMessage}</p>}
+              {/* Changing the verifier leaves response and draft stores untouched. */}
+              <button className="btn btn-secondary" type="button" onClick={() => { setShowAccessSetup(true); setAccessMessage(''); setAccessError('') }}>Change Dashboard passcode</button>
           </div>
         ) : (
           <form onSubmit={handleSaveTeacherPasscode} style={{ display: 'grid', gap: '0.75rem' }}>
