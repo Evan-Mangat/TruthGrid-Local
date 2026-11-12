@@ -40,8 +40,19 @@ function SnapshotView({ version }) {
 
       {snapshot.topicSentence && (
         <div style={{ marginBottom: '0.75rem' }}>
-          <strong style={{ color: 'var(--color-accent)', fontSize: '0.9rem' }}>{labels.topicSentence}:</strong>
+          <strong style={{ color: 'var(--color-accent)', fontSize: '0.9rem' }}>
+            {snapshot.essayPlan ? 'Thesis Statement (Sentence 1):' : `${labels.topicSentence}:`}
+          </strong>
           <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{snapshot.topicSentence}</p>
+        </div>
+      )}
+
+      {snapshot.essayPlan?.mainIdeas && snapshot.essayPlan.mainIdeas.some(Boolean) && (
+        <div style={{ marginBottom: '0.75rem', padding: '0.5rem', background: '#f5f5f5', borderRadius: 4 }}>
+          <strong style={{ fontSize: '0.85rem' }}>3 Main Ideas:</strong>
+          {snapshot.essayPlan.mainIdeas.map((idea, idx) => (
+            idea ? <p key={idx} style={{ margin: '0.15rem 0', fontSize: '0.85rem' }}>• Main Idea {String.fromCharCode(65 + idx)}: {idea}</p> : null
+          ))}
         </div>
       )}
 
@@ -54,17 +65,27 @@ function SnapshotView({ version }) {
 
       {pts.map((p, i) => (
         <div key={i} style={{ marginBottom: '0.75rem', paddingLeft: '0.75rem', borderLeft: '3px solid var(--color-border)' }}>
-          <strong style={{ color: 'var(--color-accent)', fontSize: '0.9rem' }}>{labels.point} {i + 1}</strong>
+          <strong style={{ color: 'var(--color-accent)', fontSize: '0.9rem' }}>
+            {snapshot.essayPlan ? `Body Paragraph ${i + 1} (${['1st', '2nd', '3rd'][i]} Main Point — Group ${String.fromCharCode(65 + i)})` : `${labels.point} ${i + 1}`}
+          </strong>
+          {p.transitionIntoParagraph && <p style={{ fontSize: '0.85rem', marginTop: '0.2rem' }}><strong>Transition:</strong> {p.transitionIntoParagraph}</p>}
           {p.link && <p style={{ fontSize: '0.9rem', marginTop: '0.2rem' }}><strong>{labels.link}:</strong> {p.link}</p>}
-          {p.point && <p style={{ fontSize: '0.9rem', marginTop: '0.2rem' }}><strong>{labels.point}:</strong> {p.point}</p>}
-          {p.example && <p style={{ fontSize: '0.9rem', marginTop: '0.2rem', fontStyle: 'italic' }}><strong>{labels.example}:</strong> {p.example}</p>}
-          {p.explanation && <p style={{ fontSize: '0.9rem', marginTop: '0.2rem' }}><strong>{labels.explanation}:</strong> {p.explanation}</p>}
+          {p.point && <p style={{ fontSize: '0.9rem', marginTop: '0.2rem' }}><strong>Assertion:</strong> {p.point}</p>}
+          {p.example && <p style={{ fontSize: '0.9rem', marginTop: '0.2rem', fontStyle: 'italic' }}><strong>Evidence 1:</strong> {p.example}</p>}
+          {p.explanation && <p style={{ fontSize: '0.9rem', marginTop: '0.2rem' }}><strong>Commentary 1:</strong> {p.explanation}</p>}
+          {p.example2 && <p style={{ fontSize: '0.9rem', marginTop: '0.2rem', fontStyle: 'italic' }}><strong>Evidence 2:</strong> {p.example2}</p>}
+          {p.explanation2 && <p style={{ fontSize: '0.9rem', marginTop: '0.2rem' }}><strong>Commentary 2:</strong> {p.explanation2}</p>}
+          {p.example3 && <p style={{ fontSize: '0.9rem', marginTop: '0.2rem', fontStyle: 'italic' }}><strong>Evidence 3:</strong> {p.example3}</p>}
+          {p.explanation3 && <p style={{ fontSize: '0.9rem', marginTop: '0.2rem' }}><strong>Commentary 3:</strong> {p.explanation3}</p>}
+          {p.paragraphConclusion && <p style={{ fontSize: '0.9rem', marginTop: '0.2rem' }}><strong>Concluding Sentence:</strong> {p.paragraphConclusion}</p>}
         </div>
       ))}
 
       {snapshot.concludingSentence && (
         <div style={{ marginBottom: '0.75rem' }}>
-          <strong style={{ color: 'var(--color-accent)', fontSize: '0.9rem' }}>{labels.concludingSentence}:</strong>
+          <strong style={{ color: 'var(--color-accent)', fontSize: '0.9rem' }}>
+            {snapshot.essayPlan ? 'Conclusion (Paragraph 5):' : `${labels.concludingSentence}:`}
+          </strong>
           <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{snapshot.concludingSentence}</p>
         </div>
       )}
@@ -119,17 +140,34 @@ function formatSnapshotAsText(snapshot) {
     ...(snapshot.labels || {}),
   }
   const parts = []
-  if (snapshot.topicSentence) parts.push(`${labels.topicSentence}:\n${snapshot.topicSentence}`)
+  if (snapshot.topicSentence) {
+    parts.push(`${snapshot.essayPlan ? 'Thesis Statement (Sentence 1)' : labels.topicSentence}:\n${snapshot.topicSentence}`)
+  }
+  if (snapshot.essayPlan?.mainIdeas && snapshot.essayPlan.mainIdeas.some(Boolean)) {
+    const mi = snapshot.essayPlan.mainIdeas.map((idea, idx) => `• Main Idea ${String.fromCharCode(65 + idx)}: ${idea}`).join('\n')
+    parts.push(`Main Ideas:\n${mi}`)
+  }
   if (snapshot.sharedPoint) parts.push(`Central ${labels.point}:\n${snapshot.sharedPoint}`)
   for (const [i, p] of (snapshot.points || []).entries()) {
     const section = []
+    if (p.transitionIntoParagraph) section.push(`Transition into Paragraph: ${p.transitionIntoParagraph}`)
     if (p.link) section.push(`${labels.link}: ${p.link}`)
-    if (p.point) section.push(`${labels.point}: ${p.point}`)
-    if (p.example) section.push(`${labels.example}: ${p.example}`)
-    if (p.explanation) section.push(`${labels.explanation}: ${p.explanation}`)
-    if (section.length) parts.push(`${labels.point} ${i + 1}:\n${section.join('\n')}`)
+    if (p.point) section.push(`Assertion: ${p.point}`)
+    if (p.example) section.push(`Evidence 1: ${p.example}`)
+    if (p.explanation) section.push(`Commentary 1: ${p.explanation}`)
+    if (p.evidenceTransition2) section.push(`Transition: ${p.evidenceTransition2}`)
+    if (p.example2) section.push(`Evidence 2: ${p.example2}`)
+    if (p.explanation2) section.push(`Commentary 2: ${p.explanation2}`)
+    if (p.evidenceTransition3) section.push(`Transition: ${p.evidenceTransition3}`)
+    if (p.example3) section.push(`Evidence 3: ${p.example3}`)
+    if (p.explanation3) section.push(`Commentary 3: ${p.explanation3}`)
+    if (p.paragraphConclusion) section.push(`Concluding Sentence: ${p.paragraphConclusion}`)
+    if (p.transitionAfterParagraph) section.push(`Transition to Next Point: ${p.transitionAfterParagraph}`)
+    if (section.length) parts.push(`${snapshot.essayPlan ? `Body Paragraph ${i + 1}` : `${labels.point} ${i + 1}`}:\n${section.join('\n')}`)
   }
-  if (snapshot.concludingSentence) parts.push(`${labels.concludingSentence}:\n${snapshot.concludingSentence}`)
+  if (snapshot.concludingSentence) {
+    parts.push(`${snapshot.essayPlan ? 'Conclusion (Paragraph 5)' : labels.concludingSentence}:\n${snapshot.concludingSentence}`)
+  }
   return parts.join('\n\n')
 }
 

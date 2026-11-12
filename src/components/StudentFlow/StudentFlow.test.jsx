@@ -132,4 +132,96 @@ describe('StudentFlow scan reference', () => {
       'A central claim about the text',
     ])
   })
+
+  it('submits a complete five-paragraph essay with 3 evidence slots per body paragraph and assembles fullResponse', () => {
+    const onSubmit = vi.fn()
+    render(
+      <StudentFlow
+        session={{
+          passage: 'A passage about perseverance and community.',
+          studentName: 'Jordan Student',
+          labels: {
+            topicSentence: 'Topic Sentence',
+            link: 'Link',
+            point: 'Point',
+            example: 'Evidence',
+            explanation: 'Commentary',
+            concludingSentence: 'Concluding Sentence',
+          },
+          mode: 'essay',
+          numPoints: 3,
+          prompt: 'How does perseverance shape the community?',
+        }}
+        onSubmit={onSubmit}
+      />
+    )
+
+    // Formulate thesis statement as sentence 1
+    fireEvent.change(document.getElementById('topic-sentence'), {
+      target: { value: 'In the story, perseverance shapes the community through Shared sacrifice, Active solidarity, and Moral courage.' },
+    })
+
+    // Label Main Ideas A, B, C and introduction preview sentences
+    const mainIdeas = ['Shared sacrifice', 'Active solidarity', 'Moral courage']
+    mainIdeas.forEach((idea, index) => {
+      const letter = String.fromCharCode(65 + index)
+      fireEvent.change(document.getElementById(`main-idea-${letter}`), { target: { value: idea } })
+      fireEvent.change(document.getElementById(`intro-support-${index}`), { target: { value: `This idea of ${idea.toLowerCase()} is fundamental.` } })
+    })
+
+    // Complete all 3 body paragraphs (each with assertion, 3 evidence/commentary slots, concluding sentence)
+    for (let i = 0; i < 3; i += 1) {
+      fireEvent.change(document.getElementById(`point-${i}`), { target: { value: `Body ${i + 1} assertion regarding ${mainIdeas[i]}.` } })
+      fireEvent.change(document.getElementById(`example-${i}`), { target: { value: `Evidence 1 for paragraph ${i + 1}` } })
+      fireEvent.change(document.getElementById(`explanation-${i}`), { target: { value: `Commentary 1 for paragraph ${i + 1}` } })
+      fireEvent.change(document.getElementById(`example2-${i}`), { target: { value: `Evidence 2 for paragraph ${i + 1}` } })
+      fireEvent.change(document.getElementById(`explanation2-${i}`), { target: { value: `Commentary 2 for paragraph ${i + 1}` } })
+      fireEvent.change(document.getElementById(`example3-${i}`), { target: { value: `Evidence 3 for paragraph ${i + 1}` } })
+      fireEvent.change(document.getElementById(`explanation3-${i}`), { target: { value: `Commentary 3 for paragraph ${i + 1}` } })
+      fireEvent.change(document.getElementById(`paragraph-conclusion-${i}`), { target: { value: `In conclusion, this wraps up body paragraph ${i + 1}.` } })
+    }
+
+    // Complete conclusion
+    fireEvent.change(document.getElementById('concluding-sentence'), {
+      target: { value: 'Ultimately, perseverance demonstrates that human connection transcends hardship.' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit Response' }))
+
+    expect(onSubmit).toHaveBeenCalledOnce()
+    const submission = onSubmit.mock.calls[0][0]
+    expect(submission.mode).toBe('essay')
+    expect(submission.essayPlan.mainIdeas).toEqual(mainIdeas)
+    expect(submission.points).toHaveLength(3)
+    expect(submission.points[0].example2).toBe('Evidence 2 for paragraph 1')
+    expect(submission.points[0].example3).toBe('Evidence 3 for paragraph 1')
+    expect(submission.fullResponse.split('\n\n')).toHaveLength(5)
+  })
+
+  it('warns student when a body paragraph concluding sentence ends with a quotation', () => {
+    render(
+      <StudentFlow
+        session={{
+          passage: '',
+          studentName: 'Taylor Student',
+          labels: {
+            topicSentence: 'Topic Sentence',
+            link: 'Link',
+            point: 'Point',
+            example: 'Evidence',
+            explanation: 'Commentary',
+            concludingSentence: 'Concluding Sentence',
+          },
+          mode: 'essay',
+          numPoints: 3,
+        }}
+        onSubmit={vi.fn()}
+      />
+    )
+
+    const conclInput = document.getElementById('paragraph-conclusion-0')
+    fireEvent.change(conclInput, { target: { value: 'This is proven when she says, "never give up."' } })
+
+    expect(screen.getByText(/Reminder: Never end a concluding sentence with a quotation/)).toBeInTheDocument()
+  })
 })

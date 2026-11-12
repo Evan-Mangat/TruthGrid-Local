@@ -24,9 +24,17 @@ describe('classroom response workflow', () => {
     fireEvent.change(document.getElementById('concluding-sentence'), { target: { value: 'Ultimately, these details reinforce the central idea.' } })
 
     for (let index = 0; index < 3; index += 1) {
+      const letter = String.fromCharCode(65 + index)
+      fireEvent.change(document.getElementById(`main-idea-${letter}`), { target: { value: `Main Idea ${letter}` } })
+      fireEvent.change(document.getElementById(`intro-support-${index}`), { target: { value: `Introduction supporting Main Idea ${letter}` } })
       fireEvent.change(document.getElementById(`point-${index}`), { target: { value: `Claim ${index + 1}` } })
       fireEvent.change(document.getElementById(`example-${index}`), { target: { value: `Example ${index + 1}` } })
       fireEvent.change(document.getElementById(`explanation-${index}`), { target: { value: `Reason ${index + 1}` } })
+      fireEvent.change(document.getElementById(`example2-${index}`), { target: { value: `Evidence 2 for ${index + 1}` } })
+      fireEvent.change(document.getElementById(`explanation2-${index}`), { target: { value: `Commentary 2 for ${index + 1}` } })
+      fireEvent.change(document.getElementById(`example3-${index}`), { target: { value: `Evidence 3 for ${index + 1}` } })
+      fireEvent.change(document.getElementById(`explanation3-${index}`), { target: { value: `Commentary 3 for ${index + 1}` } })
+      fireEvent.change(document.getElementById(`paragraph-conclusion-${index}`), { target: { value: `Concluding sentence for paragraph ${index + 1}.` } })
     }
     await user.click(screen.getByRole('button', { name: 'Submit Response' }))
 

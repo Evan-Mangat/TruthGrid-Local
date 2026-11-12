@@ -78,19 +78,55 @@ export default function Results({ submission, session, onReset, onNavigateToDash
 
   const hasPassage = Boolean(passage && passage.trim())
 
+  const isEssay = submission.mode === 'essay'
+  const essayPlan = submission.essayPlan
+
   function handleCopyWork() {
+    let responseText = ''
+    if (isEssay) {
+      responseText = submission.fullResponse || [
+        `--- Introduction (Paragraph 1) ---`,
+        `Thesis Statement: ${topicSentence}`,
+        ...(essayPlan?.introSupport || []).map((s, idx) => `Sentence ${idx + 2}: ${s}`),
+        essayPlan?.introTransition ? `Sentence 5 (Transition): ${essayPlan.introTransition}` : '',
+        ...points.map((p, i) => [
+          `\n--- Body Paragraph ${i + 1} (${['1st', '2nd', '3rd'][i]} Main Point${essayPlan?.mainIdeas?.[i] ? `: ${essayPlan.mainIdeas[i]}` : ''}) ---`,
+          p.transitionIntoParagraph ? `Transition into Paragraph: ${p.transitionIntoParagraph}` : '',
+          `Assertion: ${p.point}`,
+          `Evidence 1: ${p.example}`,
+          `Commentary 1: ${p.explanation}`,
+          p.evidenceTransition2 ? `Transition: ${p.evidenceTransition2}` : '',
+          p.example2 ? `Evidence 2: ${p.example2}` : '',
+          p.explanation2 ? `Commentary 2: ${p.explanation2}` : '',
+          p.evidenceTransition3 ? `Transition: ${p.evidenceTransition3}` : '',
+          p.example3 ? `Evidence 3: ${p.example3}` : '',
+          p.explanation3 ? `Commentary 3: ${p.explanation3}` : '',
+          p.paragraphConclusion ? `Concluding Sentence: ${p.paragraphConclusion}` : '',
+          p.transitionAfterParagraph ? `Transition to Next Point: ${p.transitionAfterParagraph}` : '',
+        ].filter(Boolean).join('\n')),
+        `\n--- Conclusion (Paragraph 5) ---`,
+        essayPlan?.conclusionTransition ? `Transition: ${essayPlan.conclusionTransition}` : '',
+        concludingSentence,
+      ].filter(Boolean).join('\n')
+    } else {
+      responseText = [
+        ...(topicSentence ? [`\n${labels.topicSentence || 'Topic Sentence'}:\n${topicSentence}`] : []),
+        ...points.map(
+          (p, i) =>
+            `\n${labels.point} ${i + 1}:\n${p.link ? `${labels.link || 'Link'}: ${p.link}\n` : ''}${p.point}\n${labels.example} ${i + 1}:\n${p.example}\n${labels.explanation} ${i + 1}:\n${p.explanation}`
+        ),
+        ...(concludingSentence ? [`\n${labels.concludingSentence || 'Concluding Sentence'}:\n${concludingSentence}`] : []),
+      ].join('\n')
+    }
+
     const textLines = [
       `TruthGrid Student Response`,
       `Student: ${studentName}${studentNumber ? ` (#${studentNumber})` : ''}`,
+      `Format: ${isEssay ? 'Five-Paragraph Essay' : 'Literary Analysis'}`,
       `Submitted: ${new Date(submittedAt).toLocaleString()}`,
       ...(hasPassage ? [`\n--- Reading Passage ---\n${passage}\n`] : []),
       `--- Student Response ---`,
-      ...(topicSentence ? [`\n${labels.topicSentence || 'Topic Sentence'}:\n${topicSentence}`] : []),
-      ...points.map(
-        (p, i) =>
-          `\n${labels.point} ${i + 1}:\n${p.link ? `${labels.link || 'Link'}: ${p.link}\n` : ''}${p.point}\n${labels.example} ${i + 1}:\n${p.example}\n${labels.explanation} ${i + 1}:\n${p.explanation}`
-      ),
-      ...(concludingSentence ? [`\n${labels.concludingSentence || 'Concluding Sentence'}:\n${concludingSentence}`] : []),
+      responseText,
     ]
     if (!navigator.clipboard?.writeText) {
       setSaveErrorMessage('Clipboard access is unavailable. Select and copy your response from the page, or retry saving.')
@@ -229,14 +265,18 @@ export default function Results({ submission, session, onReset, onNavigateToDash
         </div>
       )}
 
-      {/* Full Paragraph Preview */}
+      {/* Full Preview */}
       <div className="card" style={{ borderLeft: '4px solid #78909c' }}>
-        <h3 style={{ marginBottom: '0.5rem' }}>Full Paragraph Preview</h3>
+        <h3 style={{ marginBottom: '0.5rem' }}>
+          {isEssay ? 'Full Five-Paragraph Essay Preview' : 'Full Paragraph Preview'}
+        </h3>
         <p className="muted" style={{ fontSize: '0.85rem', marginBottom: '0.75rem' }}>
-          The student's response assembled as a continuous paragraph.
+          {isEssay
+            ? "The student's response assembled as a continuous five-paragraph essay."
+            : "The student's response assembled as a continuous paragraph."}
         </p>
         <div style={{ lineHeight: '1.8', fontSize: '0.97rem', whiteSpace: 'pre-wrap' }}>
-          {[
+          {submission.fullResponse || [
             topicSentence,
             ...points.map(p => [p.link, p.point, p.example, p.explanation].filter(Boolean).join(' ')),
             concludingSentence,
@@ -244,53 +284,168 @@ export default function Results({ submission, session, onReset, onNavigateToDash
         </div>
       </div>
 
-      {/* Topic Sentence */}
-      {topicSentence && (
-        <div className="card">
-          <h2 style={{ color: 'var(--color-accent)', marginBottom: '0.5rem' }}>
-            {labels.topicSentence || 'Topic Sentence'}
-          </h2>
-          <p style={{ whiteSpace: 'pre-wrap' }}>{topicSentence}</p>
-        </div>
-      )}
-
-      {/* Per-point breakdown */}
-      {points.map((p, i) => (
-        <div className="card" key={i}>
-          <h2 style={{ color: 'var(--color-accent)', marginBottom: '0.75rem' }}>
-            {labels.point} {i + 1}
-            {hasPassage && <ScoreBadge score={similarityScores[i]?.exampleScore} />}
-          </h2>
-
-          {p.link && (
+      {isEssay ? (
+        <>
+          {/* Essay Introduction Breakdown */}
+          <div className="card" style={{ borderLeft: '4px solid #287a56' }}>
+            <h2 style={{ color: 'var(--color-accent)', marginBottom: '0.5rem' }}>
+              Introduction (Paragraph 1)
+            </h2>
             <div style={{ marginBottom: '0.75rem' }}>
-              <strong>{labels.link || 'Link'}:</strong>
-              <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{p.link}</p>
+              <strong>Sentence 1 — Thesis Statement:</strong>
+              <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{topicSentence}</p>
+            </div>
+            {(essayPlan?.introSupport || []).map((sentence, idx) => (
+              <div key={idx} style={{ marginBottom: '0.5rem' }}>
+                <strong>Sentence {idx + 2} — Mentions Main Idea {String.fromCharCode(65 + idx)}{essayPlan?.mainIdeas?.[idx] ? ` (${essayPlan.mainIdeas[idx]})` : ''}:</strong>
+                <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{sentence}</p>
+              </div>
+            ))}
+            {essayPlan?.introTransition && (
+              <div>
+                <strong>Sentence 5 — Transition to Body:</strong>
+                <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{essayPlan.introTransition}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Essay Body Paragraphs 1-3 Breakdown */}
+          {points.map((p, i) => {
+            const letter = String.fromCharCode(65 + i)
+            return (
+              <div className="card" key={i} style={{ borderLeft: `4px solid ${i === 0 ? '#287a56' : i === 1 ? '#bd633d' : '#315e87'}` }}>
+                <h2 style={{ color: 'var(--color-accent)', marginBottom: '0.75rem' }}>
+                  Body Paragraph {i + 1}: {['1st', '2nd', '3rd'][i]} Main Point (Group {letter})
+                  {essayPlan?.mainIdeas?.[i] ? ` — ${essayPlan.mainIdeas[i]}` : ''}
+                  {hasPassage && <ScoreBadge score={similarityScores[i]?.exampleScore} />}
+                </h2>
+
+                {p.transitionIntoParagraph && (
+                  <div style={{ marginBottom: '0.65rem' }}>
+                    <strong>Transition into Paragraph:</strong>
+                    <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{p.transitionIntoParagraph}</p>
+                  </div>
+                )}
+
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <strong>Assertion (Topic Sentence):</strong>
+                  <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{p.point}</p>
+                </div>
+
+                <div style={{ background: '#f8f9f8', padding: '0.75rem', borderRadius: 4, marginBottom: '0.75rem' }}>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <strong>Evidence 1:</strong>
+                    <p style={{ marginTop: '0.2rem', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>{p.example}</p>
+                    <strong>Commentary 1:</strong>
+                    <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{p.explanation}</p>
+                  </div>
+
+                  {p.example2 && (
+                    <div style={{ marginBottom: '0.5rem', borderTop: '1px solid #e0e0e0', paddingTop: '0.5rem' }}>
+                      {p.evidenceTransition2 && <p style={{ fontSize: '0.85rem', color: '#555' }}><em>Transition: {p.evidenceTransition2}</em></p>}
+                      <strong>Evidence 2:</strong>
+                      <p style={{ marginTop: '0.2rem', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>{p.example2}</p>
+                      <strong>Commentary 2:</strong>
+                      <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{p.explanation2}</p>
+                    </div>
+                  )}
+
+                  {p.example3 && (
+                    <div style={{ borderTop: '1px solid #e0e0e0', paddingTop: '0.5rem' }}>
+                      {p.evidenceTransition3 && <p style={{ fontSize: '0.85rem', color: '#555' }}><em>Transition: {p.evidenceTransition3}</em></p>}
+                      <strong>Evidence 3:</strong>
+                      <p style={{ marginTop: '0.2rem', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>{p.example3}</p>
+                      <strong>Commentary 3:</strong>
+                      <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{p.explanation3}</p>
+                    </div>
+                  )}
+                </div>
+
+                {p.paragraphConclusion && (
+                  <div style={{ marginBottom: '0.65rem' }}>
+                    <strong>Concluding Sentence:</strong>
+                    <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{p.paragraphConclusion}</p>
+                  </div>
+                )}
+
+                {p.transitionAfterParagraph && (
+                  <div>
+                    <strong>Transition to Next Point:</strong>
+                    <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{p.transitionAfterParagraph}</p>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+
+          {/* Essay Conclusion Breakdown */}
+          {concludingSentence && (
+            <div className="card" style={{ borderLeft: '4px solid #287a56' }}>
+              <h2 style={{ color: 'var(--color-accent)', marginBottom: '0.5rem' }}>
+                Conclusion (Paragraph 5)
+              </h2>
+              {essayPlan?.conclusionTransition && (
+                <div style={{ marginBottom: '0.5rem' }}>
+                  <strong>Transition into Conclusion:</strong>
+                  <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{essayPlan.conclusionTransition}</p>
+                </div>
+              )}
+              <strong>Echo Thesis & Big Idea / So What:</strong>
+              <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{concludingSentence}</p>
             </div>
           )}
-          <div style={{ marginBottom: '0.75rem' }}>
-            <strong>{labels.point}:</strong>
-            <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{p.point}</p>
-          </div>
-          <div style={{ marginBottom: '0.75rem' }}>
-            <strong>{labels.example}:</strong>
-            <p style={{ marginTop: '0.2rem', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>{p.example}</p>
-          </div>
-          <div>
-            <strong>{labels.explanation}:</strong>
-            <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{p.explanation}</p>
-          </div>
-        </div>
-      ))}
+        </>
+      ) : (
+        <>
+          {/* Topic Sentence */}
+          {topicSentence && (
+            <div className="card">
+              <h2 style={{ color: 'var(--color-accent)', marginBottom: '0.5rem' }}>
+                {labels.topicSentence || 'Topic Sentence'}
+              </h2>
+              <p style={{ whiteSpace: 'pre-wrap' }}>{topicSentence}</p>
+            </div>
+          )}
 
-      {/* Concluding Sentence */}
-      {concludingSentence && (
-        <div className="card">
-          <h2 style={{ color: 'var(--color-accent)', marginBottom: '0.5rem' }}>
-            {labels.concludingSentence || 'Concluding Sentence'}
-          </h2>
-          <p style={{ whiteSpace: 'pre-wrap' }}>{concludingSentence}</p>
-        </div>
+          {/* Per-point breakdown */}
+          {points.map((p, i) => (
+            <div className="card" key={i}>
+              <h2 style={{ color: 'var(--color-accent)', marginBottom: '0.75rem' }}>
+                {labels.point} {i + 1}
+                {hasPassage && <ScoreBadge score={similarityScores[i]?.exampleScore} />}
+              </h2>
+
+              {p.link && (
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <strong>{labels.link || 'Link'}:</strong>
+                  <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{p.link}</p>
+                </div>
+              )}
+              <div style={{ marginBottom: '0.75rem' }}>
+                <strong>{labels.point}:</strong>
+                <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{p.point}</p>
+              </div>
+              <div style={{ marginBottom: '0.75rem' }}>
+                <strong>{labels.example}:</strong>
+                <p style={{ marginTop: '0.2rem', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>{p.example}</p>
+              </div>
+              <div>
+                <strong>{labels.explanation}:</strong>
+                <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{p.explanation}</p>
+              </div>
+            </div>
+          ))}
+
+          {/* Concluding Sentence */}
+          {concludingSentence && (
+            <div className="card">
+              <h2 style={{ color: 'var(--color-accent)', marginBottom: '0.5rem' }}>
+                {labels.concludingSentence || 'Concluding Sentence'}
+              </h2>
+              <p style={{ whiteSpace: 'pre-wrap' }}>{concludingSentence}</p>
+            </div>
+          )}
+        </>
       )}
 
       {/* Printable Teacher Feedback Box */}
