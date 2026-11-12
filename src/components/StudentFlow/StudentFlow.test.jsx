@@ -169,13 +169,16 @@ describe('StudentFlow scan reference', () => {
       fireEvent.change(document.getElementById(`intro-support-${index}`), { target: { value: `This idea of ${idea.toLowerCase()} is fundamental.` } })
     })
 
-    // Complete all 3 body paragraphs (each with assertion, 3 evidence/commentary slots, concluding sentence)
+    // Complete all 3 body paragraphs (each with assertion, 3 evidence/commentary slots with transitions, concluding sentence)
     for (let i = 0; i < 3; i += 1) {
       fireEvent.change(document.getElementById(`point-${i}`), { target: { value: `Body ${i + 1} assertion regarding ${mainIdeas[i]}.` } })
+      fireEvent.change(document.getElementById(`evidence-1-${i}-transition`), { target: { value: 'For example' } })
       fireEvent.change(document.getElementById(`example-${i}`), { target: { value: `Evidence 1 for paragraph ${i + 1}` } })
       fireEvent.change(document.getElementById(`explanation-${i}`), { target: { value: `Commentary 1 for paragraph ${i + 1}` } })
+      fireEvent.change(document.getElementById(`evidence-2-${i}-transition`), { target: { value: 'Furthermore' } })
       fireEvent.change(document.getElementById(`example2-${i}`), { target: { value: `Evidence 2 for paragraph ${i + 1}` } })
       fireEvent.change(document.getElementById(`explanation2-${i}`), { target: { value: `Commentary 2 for paragraph ${i + 1}` } })
+      fireEvent.change(document.getElementById(`evidence-3-${i}-transition`), { target: { value: 'In addition' } })
       fireEvent.change(document.getElementById(`example3-${i}`), { target: { value: `Evidence 3 for paragraph ${i + 1}` } })
       fireEvent.change(document.getElementById(`explanation3-${i}`), { target: { value: `Commentary 3 for paragraph ${i + 1}` } })
       fireEvent.change(document.getElementById(`paragraph-conclusion-${i}`), { target: { value: `In conclusion, this wraps up body paragraph ${i + 1}.` } })
@@ -223,5 +226,47 @@ describe('StudentFlow scan reference', () => {
     fireEvent.change(conclInput, { target: { value: 'This is proven when she says, "never give up."' } })
 
     expect(screen.getByText(/Reminder: Never end a concluding sentence with a quotation/)).toBeInTheDocument()
+  })
+
+  it('requires transition selection or quote attribution for each evidence set before submission', () => {
+    const onSubmit = vi.fn()
+    render(
+      <StudentFlow
+        session={{
+          passage: '',
+          studentName: 'Morgan Student',
+          labels: {
+            topicSentence: 'Topic Sentence',
+            link: 'Link',
+            point: 'Point',
+            example: 'Evidence',
+            explanation: 'Commentary',
+            concludingSentence: 'Concluding Sentence',
+          },
+          mode: 'essay',
+          numPoints: 3,
+        }}
+        onSubmit={onSubmit}
+      />
+    )
+
+    // Complete mandatory fields except evidence lead-in transitions
+    fireEvent.change(document.getElementById('topic-sentence'), { target: { value: 'Thesis sentence.' } })
+    for (let i = 0; i < 3; i += 1) {
+      fireEvent.change(document.getElementById(`intro-support-${i}`), { target: { value: `Intro support ${i + 1}` } })
+      fireEvent.change(document.getElementById(`point-${i}`), { target: { value: `Body point ${i + 1}` } })
+      fireEvent.change(document.getElementById(`example-${i}`), { target: { value: `Evidence 1` } })
+      fireEvent.change(document.getElementById(`explanation-${i}`), { target: { value: `Commentary 1` } })
+      fireEvent.change(document.getElementById(`example2-${i}`), { target: { value: `Evidence 2` } })
+      fireEvent.change(document.getElementById(`explanation2-${i}`), { target: { value: `Commentary 2` } })
+      fireEvent.change(document.getElementById(`example3-${i}`), { target: { value: `Evidence 3` } })
+      fireEvent.change(document.getElementById(`explanation3-${i}`), { target: { value: `Commentary 3` } })
+      fireEvent.change(document.getElementById(`paragraph-conclusion-${i}`), { target: { value: `Conclusion ${i + 1}` } })
+    }
+    fireEvent.change(document.getElementById('concluding-sentence'), { target: { value: 'Overall conclusion.' } })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit Response' }))
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(screen.getByText(/Body Paragraph 1, Evidence Set 1: select a transition word or enter a quote attribution/)).toBeInTheDocument()
   })
 })
