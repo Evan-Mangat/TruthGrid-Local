@@ -87,7 +87,7 @@ export default function App() {
     <div className="app-root">
       {screen === 'setup' && (
         <TeacherSetup
-          initialConfig={teacherConfig}
+          initialConfig={{ ...teacherConfig, ...(session || {}) }}
           onReady={handleSessionReady}
           onNavigateToDashboard={() => handleOpenDashboard('setup')}
           onPrintBlankWorksheet={handlePrintBlankWorksheet}
@@ -95,7 +95,11 @@ export default function App() {
       )}
 
       {screen === 'writing' && session && (
-        <StudentFlow session={session} onSubmit={handleSubmission} />
+        <StudentFlow
+          session={session}
+          onSubmit={handleSubmission}
+          onBack={() => setScreen('setup')}
+        />
       )}
 
       {screen === 'results' && submission && (

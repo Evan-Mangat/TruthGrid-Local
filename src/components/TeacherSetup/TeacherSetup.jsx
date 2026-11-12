@@ -1,7 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { hasTeacherPasscode, setTeacherPasscode, verifyTeacherPasscode } from '../../utils/teacherAccess'
+import { getActiveDraft, clearActiveDraft, saveDraftToStorage } from '../StudentFlow/StudentFlow'
+import { getAllDraftSessions, getDraftVersionsBySession } from '../../utils/draftHistory'
 
 const TEACHER_CONFIG_KEY = 'truthgrid_teacher_config'
+
+function hasDraftContent(draft) {
+  if (!draft) return false
+  if (draft.topicSentence?.trim()) return true
+  if (draft.sharedPoint?.trim()) return true
+  if (draft.concludingSentence?.trim()) return true
+  if (draft.points?.some(p => p.point?.trim() || p.example?.trim() || p.explanation?.trim() || p.paragraphConclusion?.trim())) return true
+  if (draft.essayPlan?.ideas?.some(i => i.text?.trim()) || draft.essayPlan?.mainIdeas?.some(i => i.trim())) return true
+  return false
+}
 
 const DEFAULT_LABELS = {
   topicSentence: 'Topic Sentence',
@@ -46,9 +58,13 @@ export default function TeacherSetup({
   // Essay uses three distinct points; literary analysis repeats one point.
   const [mode, setMode] = useState(saved.mode === 'literary_analysis' ? 'literary_analysis' : 'essay')
 
-  // Student info is ALWAYS cleared for the next student
-  const [studentName, setStudentName] = useState('')
-  const [studentNumber, setStudentNumber] = useState('')
+  // Student info preserves returning student session if available
+  const [studentName, setStudentName] = useState(saved.studentName || '')
+  const [studentNumber, setStudentNumber] = useState(saved.studentNumber || '')
+
+  const [activeDraft, setActiveDraft] = useState(() => getActiveDraft())
+  const [savedDraftSessions, setSavedDraftSessions] = useState([])
+  const [showDraftsDrawer, setShowDraftsDrawer] = useState(false)
 
   const [showLabelEdit, setShowLabelEdit] = useState(false)
   const [errors, setErrors] = useState({})
@@ -65,6 +81,67 @@ export default function TeacherSetup({
   const [accessMessage, setAccessMessage] = useState('')
   const [isSavingPasscode, setIsSavingPasscode] = useState(false)
   const fileInputRef = useRef(null)
+
+  useEffect(() => {
+    async function loadSessions() {
+      try {
+        const sessions = await getAllDraftSessions()
+        setSavedDraftSessions(sessions)
+      } catch (err) {
+        console.warn('Could not load draft sessions:', err)
+      }
+    }
+    loadSessions()
+  }, [])
+
+  function handleResumeActiveDraft() {
+    if (!activeDraft) return
+    onReady({
+      passage: activeDraft.passage || passage,
+      originalDocument: activeDraft.originalDocument || originalDocument,
+      prompt: activeDraft.prompt || prompt,
+      labels: activeDraft.labels || labels,
+      mode: activeDraft.mode || mode,
+      numPoints: activeDraft.numPoints || 3,
+      studentName: activeDraft.studentName || 'Student',
+      studentNumber: activeDraft.studentNumber || '',
+      startedAt: activeDraft.savedAt || new Date().toISOString(),
+    })
+  }
+
+  function handleDismissActiveDraft() {
+    clearActiveDraft()
+    setActiveDraft(null)
+  }
+
+  async function handleResumeSessionDraft(s) {
+    try {
+      const versions = await getDraftVersionsBySession(s.sessionId)
+      const latest = versions[versions.length - 1]
+      if (latest && latest.snapshot) {
+        saveDraftToStorage({
+          ...latest.snapshot,
+          studentName: s.studentName,
+          studentNumber: s.studentNumber,
+          numPoints: 3,
+          savedAt: latest.timestamp,
+        })
+        onReady({
+          passage: passage,
+          originalDocument: originalDocument,
+          prompt: prompt,
+          labels: labels,
+          mode: mode,
+          numPoints: 3,
+          studentName: s.studentName,
+          studentNumber: s.studentNumber || '',
+          startedAt: s.firstTimestamp || new Date().toISOString(),
+        })
+      }
+    } catch (err) {
+      console.warn('Could not resume session draft:', err)
+    }
+  }
 
   // Auto-persist teacher settings (passage, labels, mode, prompt) to localStorage
   useEffect(() => {
@@ -213,12 +290,22 @@ export default function TeacherSetup({
         <div>
           <h1>TruthGrid Classroom</h1>
           <p className="muted">
-            Literary analysis writing tool · Local-first & offline
+            Literary analysis writing tool
           </p>
         </div>
 
         {/* Teacher Navigation & Paper Print Options */}
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {savedDraftSessions.length > 0 && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}
+              onClick={() => setShowDraftsDrawer(prev => !prev)}
+            >
+              📁 Saved Drafts ({savedDraftSessions.length})
+            </button>
+          )}
           {onPrintBlankWorksheet && (
             <button
               className="btn btn-secondary"
@@ -241,6 +328,103 @@ export default function TeacherSetup({
           )}
         </div>
       </div>
+
+      {/* 📁 Saved Drafts Drawer */}
+      {showDraftsDrawer && (
+        <section className="card" style={{ marginBottom: '1.25rem', borderLeft: '4px solid #3b82f6' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#1e3a8a' }}>📁 Saved Draft Sessions</h3>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ fontSize: '0.78rem', padding: '0.2rem 0.6rem' }}
+              onClick={() => setShowDraftsDrawer(false)}
+            >
+              Close ✕
+            </button>
+          </div>
+          <p className="muted" style={{ fontSize: '0.84rem', marginBottom: '0.75rem' }}>
+            Click on any draft below to load and continue that student&apos;s writing session:
+          </p>
+          <div style={{ display: 'grid', gap: '0.5rem', maxHeight: '16rem', overflowY: 'auto' }}>
+            {savedDraftSessions.map(s => (
+              <div
+                key={s.sessionId}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 6,
+                  padding: '0.6rem 0.85rem',
+                }}
+              >
+                <div>
+                  <strong style={{ fontSize: '0.92rem' }}>{s.studentName || 'Unnamed Student'}</strong>
+                  {s.studentNumber && <span className="muted" style={{ fontSize: '0.8rem', marginLeft: '0.4rem' }}>#{s.studentNumber}</span>}
+                  <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.15rem' }}>
+                    {new Date(s.lastTimestamp).toLocaleString()} · {s.versionCount} {s.versionCount === 1 ? 'version' : 'versions'}
+                    {s.isFinal && <span style={{ marginLeft: '0.5rem', color: '#16a34a', fontWeight: 600 }}>✓ Submitted</span>}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.82rem', padding: '0.35rem 0.75rem' }}
+                  onClick={() => handleResumeSessionDraft(s)}
+                >
+                  ▶ Open Draft
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 📝 In-Progress Draft Recovery Banner */}
+      {activeDraft && hasDraftContent(activeDraft) && (
+        <div
+          className="card"
+          style={{
+            background: '#f0fdf4',
+            border: '1px solid #86efac',
+            borderLeft: '5px solid #22c55e',
+            marginBottom: '1.25rem',
+            padding: '0.85rem 1rem',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div>
+              <strong style={{ color: '#15803d', fontSize: '0.98rem' }}>
+                📝 Resume In-Progress Draft: {activeDraft.studentName || 'Student'} {activeDraft.studentNumber ? `(#${activeDraft.studentNumber})` : ''}
+              </strong>
+              <p style={{ margin: '0.2rem 0 0', fontSize: '0.83rem', color: '#166534' }}>
+                Autosaved {activeDraft.savedAt ? new Date(activeDraft.savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'recently'} · {activeDraft.mode === 'literary_analysis' ? 'Literary Analysis' : '5-Paragraph Essay'}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ fontSize: '0.88rem', padding: '0.4rem 0.9rem', background: '#16a34a', borderColor: '#15803d' }}
+                onClick={handleResumeActiveDraft}
+              >
+                ▶ Resume Draft
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ fontSize: '0.82rem', padding: '0.4rem 0.7rem' }}
+                onClick={handleDismissActiveDraft}
+                title="Dismiss and start fresh"
+              >
+                Start Fresh
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <section className="card" aria-labelledby="teacher-access-setup-heading">
         {/* Previous heading: Teacher Dashboard Access. */}

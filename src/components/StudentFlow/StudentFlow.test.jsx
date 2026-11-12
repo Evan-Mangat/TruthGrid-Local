@@ -171,6 +171,7 @@ describe('StudentFlow scan reference', () => {
 
     // Complete all 3 body paragraphs (each with assertion, 3 evidence/commentary slots with transitions, concluding sentence)
     for (let i = 0; i < 3; i += 1) {
+      fireEvent.change(document.getElementById(`transition-into-${i}`), { target: { value: i === 0 ? 'First' : i === 1 ? 'Furthermore' : 'In addition' } })
       fireEvent.change(document.getElementById(`point-${i}`), { target: { value: `Body ${i + 1} assertion regarding ${mainIdeas[i]}.` } })
       fireEvent.change(document.getElementById(`evidence-1-${i}-transition`), { target: { value: 'For example' } })
       fireEvent.change(document.getElementById(`example-${i}`), { target: { value: `Evidence 1 for paragraph ${i + 1}` } })
@@ -185,6 +186,7 @@ describe('StudentFlow scan reference', () => {
     }
 
     // Complete conclusion
+    fireEvent.change(document.getElementById('conclusion-transition'), { target: { value: 'Ultimately' } })
     fireEvent.change(document.getElementById('concluding-sentence'), {
       target: { value: 'Ultimately, perseverance demonstrates that human connection transcends hardship.' },
     })
@@ -254,6 +256,7 @@ describe('StudentFlow scan reference', () => {
     fireEvent.change(document.getElementById('topic-sentence'), { target: { value: 'Thesis sentence.' } })
     for (let i = 0; i < 3; i += 1) {
       fireEvent.change(document.getElementById(`intro-support-${i}`), { target: { value: `Intro support ${i + 1}` } })
+      fireEvent.change(document.getElementById(`transition-into-${i}`), { target: { value: 'Furthermore' } })
       fireEvent.change(document.getElementById(`point-${i}`), { target: { value: `Body point ${i + 1}` } })
       fireEvent.change(document.getElementById(`example-${i}`), { target: { value: `Evidence 1` } })
       fireEvent.change(document.getElementById(`explanation-${i}`), { target: { value: `Commentary 1` } })
@@ -263,10 +266,84 @@ describe('StudentFlow scan reference', () => {
       fireEvent.change(document.getElementById(`explanation3-${i}`), { target: { value: `Commentary 3` } })
       fireEvent.change(document.getElementById(`paragraph-conclusion-${i}`), { target: { value: `Conclusion ${i + 1}` } })
     }
+    fireEvent.change(document.getElementById('conclusion-transition'), { target: { value: 'Ultimately' } })
     fireEvent.change(document.getElementById('concluding-sentence'), { target: { value: 'Overall conclusion.' } })
 
     fireEvent.click(screen.getByRole('button', { name: 'Submit Response' }))
     expect(onSubmit).not.toHaveBeenCalled()
     expect(screen.getByText(/Body Paragraph 1, Evidence Set 1: select a transition word or enter a quote attribution/)).toBeInTheDocument()
+  })
+
+  it('requires transition into body paragraphs and conclusion before submission', () => {
+    const onSubmit = vi.fn()
+    render(
+      <StudentFlow
+        session={{
+          passage: '',
+          studentName: 'Chris Student',
+          labels: {
+            topicSentence: 'Topic Sentence',
+            link: 'Link',
+            point: 'Point',
+            example: 'Evidence',
+            explanation: 'Commentary',
+            concludingSentence: 'Concluding Sentence',
+          },
+          mode: 'essay',
+          numPoints: 3,
+        }}
+        onSubmit={onSubmit}
+      />
+    )
+
+    // Complete mandatory fields except paragraph and conclusion transitions
+    fireEvent.change(document.getElementById('topic-sentence'), { target: { value: 'Thesis sentence.' } })
+    for (let i = 0; i < 3; i += 1) {
+      fireEvent.change(document.getElementById(`intro-support-${i}`), { target: { value: `Intro support ${i + 1}` } })
+      fireEvent.change(document.getElementById(`point-${i}`), { target: { value: `Body point ${i + 1}` } })
+      fireEvent.change(document.getElementById(`evidence-1-${i}-transition`), { target: { value: 'For example' } })
+      fireEvent.change(document.getElementById(`example-${i}`), { target: { value: `Evidence 1` } })
+      fireEvent.change(document.getElementById(`explanation-${i}`), { target: { value: `Commentary 1` } })
+      fireEvent.change(document.getElementById(`evidence-2-${i}-transition`), { target: { value: 'Furthermore' } })
+      fireEvent.change(document.getElementById(`example2-${i}`), { target: { value: `Evidence 2` } })
+      fireEvent.change(document.getElementById(`explanation2-${i}`), { target: { value: `Commentary 2` } })
+      fireEvent.change(document.getElementById(`evidence-3-${i}-transition`), { target: { value: 'In addition' } })
+      fireEvent.change(document.getElementById(`example3-${i}`), { target: { value: `Evidence 3` } })
+      fireEvent.change(document.getElementById(`explanation3-${i}`), { target: { value: `Commentary 3` } })
+      fireEvent.change(document.getElementById(`paragraph-conclusion-${i}`), { target: { value: `Conclusion ${i + 1}` } })
+    }
+    fireEvent.change(document.getElementById('concluding-sentence'), { target: { value: 'Overall conclusion.' } })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit Response' }))
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(screen.getByText(/Transition into Body Paragraph 1 is required/)).toBeInTheDocument()
+    expect(screen.getByText(/Transition into Conclusion is required/)).toBeInTheDocument()
+  })
+
+  it('invokes onBack callback to return to setup when clicking edit info button', () => {
+    const onBack = vi.fn()
+    render(
+      <StudentFlow
+        session={{
+          passage: '',
+          studentName: 'Robin Student',
+          labels: {
+            topicSentence: 'Topic Sentence',
+            link: 'Link',
+            point: 'Point',
+            example: 'Evidence',
+            explanation: 'Commentary',
+            concludingSentence: 'Concluding Sentence',
+          },
+          mode: 'essay',
+          numPoints: 3,
+        }}
+        onSubmit={vi.fn()}
+        onBack={onBack}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /Edit Student Info \/ Setup/ }))
+    expect(onBack).toHaveBeenCalledOnce()
   })
 })

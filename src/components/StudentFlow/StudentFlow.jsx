@@ -59,7 +59,17 @@ function loadSavedDraft(numPoints) {
   return null
 }
 
-function saveDraftToStorage(draftData) {
+export function getActiveDraft() {
+  try {
+    const raw = sessionStorage.getItem(DRAFT_STORAGE_KEY) || localStorage.getItem(DRAFT_STORAGE_KEY)
+    if (!raw) return null
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
+export function saveDraftToStorage(draftData) {
   try {
     const serialized = JSON.stringify(draftData)
     sessionStorage.setItem(DRAFT_STORAGE_KEY, serialized)
@@ -106,7 +116,7 @@ function getOrCreateSessionId() {
   }
 }
 
-export default function StudentFlow({ session, onSubmit }) {
+export default function StudentFlow({ session, onSubmit, onBack }) {
   const { passage, studentName, studentNumber, labels, startedAt } = session
   const originalDocument = session.originalDocument
   const prompt = session.prompt || ''
@@ -227,11 +237,34 @@ export default function StudentFlow({ session, onSubmit }) {
         concludingSentence,
         points,
         essayPlan,
+        mode: session.mode,
+        passage: session.passage,
+        prompt: session.prompt,
+        labels: session.labels,
         savedAt: new Date().toISOString(),
       })
       setLastSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
     }
-  }, [points, topicSentence, sharedPoint, concludingSentence, essayPlan, studentName, studentNumber, numPoints, hasUnsavedContent])
+  }, [points, topicSentence, sharedPoint, concludingSentence, essayPlan, studentName, studentNumber, numPoints, hasUnsavedContent, session])
+
+  const handleBackToSetup = useCallback(() => {
+    saveDraftToStorage({
+      studentName,
+      studentNumber,
+      numPoints,
+      topicSentence,
+      sharedPoint,
+      concludingSentence,
+      points,
+      essayPlan,
+      mode: session.mode,
+      passage: session.passage,
+      prompt: session.prompt,
+      labels: session.labels,
+      savedAt: new Date().toISOString(),
+    })
+    if (onBack) onBack()
+  }, [studentName, studentNumber, numPoints, topicSentence, sharedPoint, concludingSentence, points, essayPlan, session, onBack])
 
   function updateField(index, field, value) {
     setPoints(prev => prev.map((p, i) => (i === index ? { ...p, [field]: value } : p)))
@@ -258,6 +291,9 @@ export default function StudentFlow({ session, onSubmit }) {
     } else {
       // Essay mode validations (Steps 1 & 2 brainstorm and main idea cards are optional)
       points.forEach((p, i) => {
+        if (!p.transitionIntoParagraph?.trim()) {
+          e[`transition-into-${i}`] = `Transition into Body Paragraph ${i + 1} is required.`
+        }
         if (!p.point.trim()) e[`${i}-point`] = `Body Paragraph ${i + 1} assertion is required.`
         if (!p.example.trim()) e[`${i}-example`] = `Body Paragraph ${i + 1}, Evidence 1 is required.`
         if (!p.explanation.trim()) e[`${i}-explanation`] = `Body Paragraph ${i + 1}, Commentary 1 is required.`
@@ -279,6 +315,9 @@ export default function StudentFlow({ session, onSubmit }) {
         if (needsLeadIn(3, p.evidenceTransition3, p.quoteIntro3, p.evidenceLeadInType3))
           e[`${i}-lead-in-3`] = `Body Paragraph ${i + 1}, Evidence Set 3: select a transition word or enter a quote attribution.`
       })
+      if (!essayPlan.conclusionTransition?.trim()) {
+        e.conclusionTransition = 'Transition into Conclusion is required.'
+      }
       if (essayPlan.introSupport.some(sentence => !sentence.trim())) {
         e.introSupport = 'Complete introduction sentences 2, 3, and 4 to preview Main Ideas A, B, and C.'
       }
@@ -429,16 +468,29 @@ export default function StudentFlow({ session, onSubmit }) {
   return (
     <div className="page">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-        <div>
-          <h1>{isLiteraryAnalysis ? 'Literary Analysis' : 'Essay'}</h1>
-          <p className="muted">
-            {studentName} {studentNumber ? `(#${studentNumber})` : ''}
-            {!(passage && passage.trim()) && (
-              <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', background: '#eceff1', color: '#455a64', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 600 }}>
-                Open Prompt Mode
-              </span>
-            )}
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {onBack && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ fontSize: '0.82rem', padding: '0.35rem 0.75rem' }}
+              onClick={handleBackToSetup}
+              title="Return to setup to edit your name, student number, or reading passage"
+            >
+              ← Edit Student Info / Setup
+            </button>
+          )}
+          <div>
+            <h1 style={{ margin: 0 }}>{isLiteraryAnalysis ? 'Literary Analysis' : 'Essay'}</h1>
+            <p className="muted" style={{ margin: '0.15rem 0 0' }}>
+              {studentName} {studentNumber ? `(#${studentNumber})` : ''}
+              {!(passage && passage.trim()) && (
+                <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', background: '#eceff1', color: '#455a64', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 600 }}>
+                  Open Prompt Mode
+                </span>
+              )}
+            </p>
+          </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -578,9 +630,13 @@ export default function StudentFlow({ session, onSubmit }) {
                   id={`transition-into-${i}`}
                   label={`Transition into Body Paragraph ${i + 1}`}
                   value={p.transitionIntoParagraph}
-                  onChange={val => updateField(i, 'transitionIntoParagraph', val)}
+                  onChange={val => {
+                    updateField(i, 'transitionIntoParagraph', val)
+                    setErrors(prev => { const n = { ...prev }; delete n[`transition-into-${i}`]; return n })
+                  }}
                   placeholder="Choose an introductory/linking transition (e.g. Furthermore, In contrast, To illustrate)"
                 />
+                {errors[`transition-into-${i}`] && <p className="error-msg">{errors[`transition-into-${i}`]}</p>}
 
                 {/* Assertion / Topic Sentence */}
                 <div style={{ marginBottom: '1.25rem' }}>
@@ -820,10 +876,14 @@ export default function StudentFlow({ session, onSubmit }) {
               id="conclusion-transition"
               label="Transition into Conclusion"
               value={essayPlan.conclusionTransition}
-              onChange={val => setEssayPlan(prev => ({ ...prev, conclusionTransition: val }))}
+              onChange={val => {
+                setEssayPlan(prev => ({ ...prev, conclusionTransition: val }))
+                setErrors(prev => { const n = { ...prev }; delete n.conclusionTransition; return n })
+              }}
               placeholder="Choose a conclusion transition (e.g. Ultimately, In conclusion, In the final analysis)"
               isConclusion={true}
             />
+            {errors.conclusionTransition && <p className="error-msg">{errors.conclusionTransition}</p>}
 
             <label htmlFor="concluding-sentence" style={{ fontWeight: 700, marginTop: '0.5rem', display: 'block' }}>
               Conclusion: Echo Thesis & Big Idea / So What?

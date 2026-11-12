@@ -21,12 +21,14 @@ describe('classroom response workflow', () => {
     expect(screen.getByText('Open Prompt Mode')).toBeInTheDocument()
 
     fireEvent.change(document.getElementById('topic-sentence'), { target: { value: 'The text develops a central idea through its details.' } })
+    fireEvent.change(document.getElementById('conclusion-transition'), { target: { value: 'Ultimately' } })
     fireEvent.change(document.getElementById('concluding-sentence'), { target: { value: 'Ultimately, these details reinforce the central idea.' } })
 
     for (let index = 0; index < 3; index += 1) {
       const letter = String.fromCharCode(65 + index)
       fireEvent.change(document.getElementById(`main-idea-${letter}`), { target: { value: `Main Idea ${letter}` } })
       fireEvent.change(document.getElementById(`intro-support-${index}`), { target: { value: `Introduction supporting Main Idea ${letter}` } })
+      fireEvent.change(document.getElementById(`transition-into-${index}`), { target: { value: index === 0 ? 'First' : index === 1 ? 'Furthermore' : 'In addition' } })
       fireEvent.change(document.getElementById(`point-${index}`), { target: { value: `Claim ${index + 1}` } })
       fireEvent.change(document.getElementById(`evidence-1-${index}-transition`), { target: { value: 'For example' } })
       fireEvent.change(document.getElementById(`example-${index}`), { target: { value: `Example ${index + 1}` } })
