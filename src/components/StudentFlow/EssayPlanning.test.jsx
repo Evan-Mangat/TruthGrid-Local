@@ -67,13 +67,21 @@ describe('EssayPlanning and Transition detection utilities', () => {
     )
 
     expect(screen.getByText(/5-Paragraph In-Class Essay Exam Scaffold/)).toBeInTheDocument()
+
+    // Board is hidden by default — Step 1 & 2 content should not be visible yet
+    expect(screen.queryByText(/Brainstorm Pool \/ Unassigned/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Group A \(Body 1\)/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Show Brainstorm Board/ })).toBeInTheDocument()
+
+    // Open the board
+    fireEvent.click(screen.getByRole('button', { name: /Show Brainstorm Board/ }))
     expect(screen.getByText(/Brainstorm Pool \/ Unassigned/)).toBeInTheDocument()
     expect(screen.getByText(/Group A \(Body 1\)/)).toBeInTheDocument()
     expect(screen.getByText(/Group B \(Body 2\)/)).toBeInTheDocument()
     expect(screen.getByText(/Group C \(Body 3\)/)).toBeInTheDocument()
     expect(screen.getByText(/Set Aside \/ Disregarded/)).toBeInTheDocument()
 
-    // Toggle board collapse/expand hides both Step 1 and Step 2
+    // Toggle board collapse hides both Step 1 and Step 2
     const toggleBtn = screen.getByRole('button', { name: /Hide Brainstorm Board/ })
     fireEvent.click(toggleBtn)
     expect(screen.queryByText(/Brainstorm Pool \/ Unassigned/)).not.toBeInTheDocument()
@@ -100,6 +108,9 @@ describe('EssayPlanning and Transition detection utilities', () => {
         prompt="Test Prompt"
       />
     )
+
+    // Open the board (hidden by default)
+    fireEvent.click(screen.getByRole('button', { name: /Show Brainstorm Board/ }))
 
     // Add new card
     const input = screen.getByPlaceholderText(/Type a brainstorm idea/)

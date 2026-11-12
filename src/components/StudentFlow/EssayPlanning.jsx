@@ -238,7 +238,7 @@ export function EvidenceLeadInControl({
 
 export default function EssayPlanning({ plan, onChange, thesis, onThesisChange, prompt, errors = {} }) {
   const [newIdea, setNewIdea] = useState('')
-  const [isBoardOpen, setIsBoardOpen] = useState(true)
+  const [isBoardOpen, setIsBoardOpen] = useState(false)
   const ideas = plan.ideas || []
   const mainIdeas = plan.mainIdeas || ['', '', '']
 
