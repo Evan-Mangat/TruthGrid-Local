@@ -20,6 +20,8 @@ describe('classroom response workflow', () => {
     await user.click(screen.getByRole('button', { name: 'Start Writing Session' }))
     expect(screen.getByText('Open Prompt Mode')).toBeInTheDocument()
 
+    await user.click(screen.getByRole('button', { name: /Show Brainstorm Board/ }))
+
     fireEvent.change(document.getElementById('topic-sentence'), { target: { value: 'The text develops a central idea through its details.' } })
     fireEvent.change(document.getElementById('conclusion-transition'), { target: { value: 'Ultimately' } })
     fireEvent.change(document.getElementById('concluding-sentence'), { target: { value: 'Ultimately, these details reinforce the central idea.' } })

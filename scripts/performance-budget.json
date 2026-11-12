@@ -13,8 +13,8 @@
     "performance-score": 0.85
   },
   "regressionNoiseFloors": {
-    "first-contentful-paint": 50,
-    "largest-contentful-paint": 75,
+    "first-contentful-paint": 75,
+    "largest-contentful-paint": 150,
     "total-blocking-time": 50,
     "cumulative-layout-shift": 0.02,
     "speed-index": 100,

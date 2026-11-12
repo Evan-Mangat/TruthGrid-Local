@@ -161,6 +161,9 @@ describe('StudentFlow scan reference', () => {
       target: { value: 'In the story, perseverance shapes the community through Shared sacrifice, Active solidarity, and Moral courage.' },
     })
 
+    // Open brainstorm board to fill optional main ideas
+    fireEvent.click(screen.getByRole('button', { name: /Show Brainstorm Board/ }))
+
     // Label Main Ideas A, B, C and introduction preview sentences
     const mainIdeas = ['Shared sacrifice', 'Active solidarity', 'Moral courage']
     mainIdeas.forEach((idea, index) => {
