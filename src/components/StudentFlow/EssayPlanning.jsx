@@ -596,9 +596,9 @@ export default function EssayPlanning({ plan, onChange, thesis, onThesisChange, 
         <div className="essay-step-title">
           <span className="essay-step-number">4</span>
           <div>
-            <h3 id="intro-outline-heading">Step 4: Complete the Introduction Outline (4–5 Sentences)</h3>
+            <h3 id="intro-outline-heading">Step 4: Complete the Introduction Outline (4 Sentences)</h3>
             <p className="muted">
-              Sentence 1 is your Thesis Statement. Sentences 2–4 briefly mention your 3 Main Ideas (define terms & relevance). Sentence 5 transitions from the introduction into the body.
+              Sentence 1 is your Thesis Statement. Sentences 2–4 briefly mention your 3 Main Ideas (define terms & relevance).
             </p>
           </div>
         </div>
@@ -633,19 +633,6 @@ export default function EssayPlanning({ plan, onChange, thesis, onThesisChange, 
               </div>
             )
           })}
-
-          <div style={{ gridColumn: '1 / -1' }}>
-            <TransitionSelect
-              id="intro-transition"
-              label="Sentence 5: Concluding / Transition Sentence into Body Paragraph 1"
-              value={plan.introTransition}
-              onChange={introTransition => updatePlan({ introTransition })}
-              placeholder="Choose a transition into the body (e.g. First, In the same way, To illustrate)"
-            />
-            <p className="muted" style={{ fontSize: '0.78rem', marginTop: '-0.4rem', marginBottom: '0.4rem' }}>
-              Transitions from your introduction into the body of the essay and can link the last idea with the first Main idea structurally.
-            </p>
-          </div>
         </div>
         {errors.introSupport && <p className="error-msg">{errors.introSupport}</p>}
       </section>
