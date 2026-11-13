@@ -52,10 +52,8 @@ export default function PrintWorksheet({ config, onBack }) {
       {/* Printable Sheet */}
       <div className="printable-worksheet" style={{ color: '#000', background: '#fff' }}>
         <div style={{ borderBottom: '2px solid #000', paddingBottom: '0.5rem', marginBottom: '1.25rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>CREATIVE WRITING 10</span>
+          <div style={{ textAlign: 'center', marginBottom: '0.35rem' }}>
             <span style={{ fontSize: '1.2rem', fontWeight: 800 }}>{isLiteraryAnalysis ? 'TRUTHGRID LITERARY ANALYSIS' : 'ESSAY EXAM TEMPLATE'}</span>
-            <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>MS. L. KWAN</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.8rem', fontSize: '1rem' }}>
             <span>Name: ____________________________________</span>
