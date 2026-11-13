@@ -64,6 +64,7 @@ export default function TeacherAccess({ onUnlock, onCancel, onRecoveryComplete }
             <label htmlFor="recovery-confirmation">Type RESET to confirm</label>
             <input
               id="recovery-confirmation"
+              type="text"
               value={confirmation}
               onChange={event => setConfirmation(event.target.value)}
               autoComplete="off"
