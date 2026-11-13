@@ -405,7 +405,6 @@ export default function StudentFlow({ session, onSubmit, onBack, onSessionUpdate
         essayPlan.introSupport[0],
         essayPlan.introSupport[1],
         essayPlan.introSupport[2],
-        essayPlan.introTransition,
       ].filter(Boolean).join(' '),
 
       // Paragraph 2: Body Paragraph 1 (Main Idea A)

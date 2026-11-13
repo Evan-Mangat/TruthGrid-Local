@@ -77,15 +77,15 @@ export default function TeacherAccess({ onUnlock, onCancel, onRecoveryComplete }
           </form>
         ) : !hasTeacherPasscode() ? (
           <>
-            <p role="alert" className="error-msg">No teacher passcode is set on this device. Return to setup and create one before student use.</p>
+            <p role="alert" className="error-msg">No passcode is set on this device. Return to setup and create one before student use.</p>
             <button className="btn btn-secondary" onClick={onCancel}>Back to Setup</button>
           </>
         ) : (
           <form onSubmit={handleUnlock}>
             <p className="muted" style={{ marginBottom: '1rem' }}>
-              Teacher access only. This local passcode is a casual privacy barrier, not strong security against someone who can inspect or change this browser app.
+              This local passcode is a casual privacy barrier, not strong security against someone who can inspect or change this browser app.
             </p>
-            <label htmlFor="teacher-passcode">Teacher passcode</label>
+            <label htmlFor="teacher-passcode">Passcode</label>
             <input
               id="teacher-passcode"
               type="password"

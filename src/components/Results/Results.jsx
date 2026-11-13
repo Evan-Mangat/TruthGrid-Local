@@ -88,7 +88,6 @@ export default function Results({ submission, session, onReset, onNavigateToDash
         `--- Introduction (Paragraph 1) ---`,
         `Thesis Statement: ${topicSentence}`,
         ...(essayPlan?.introSupport || []).map((s, idx) => `Sentence ${idx + 2}: ${s}`),
-        essayPlan?.introTransition ? `Sentence 5 (Transition): ${essayPlan.introTransition}` : '',
         ...points.map((p, i) => [
           `\n--- Body Paragraph ${i + 1} (${['1st', '2nd', '3rd'][i]} Main Point${essayPlan?.mainIdeas?.[i] ? `: ${essayPlan.mainIdeas[i]}` : ''}) ---`,
           p.transitionIntoParagraph ? `Transition into Paragraph: ${p.transitionIntoParagraph}` : '',
@@ -249,8 +248,8 @@ export default function Results({ submission, session, onReset, onNavigateToDash
           <p className="muted" style={{ marginTop: '0.3rem', fontSize: '0.9rem' }}>
             This score measures how closely the student's quoted evidence overlaps with words in the reading passage.
             A higher score means the student is drawing language directly from the text.
-            <strong> This is NOT an AI detection tool</strong> — it does not check whether writing is human or AI generated.
-            It is a flag for teacher review — <strong>not a grade or verdict</strong>.
+            <strong> This is NOT an AI detection tool</strong>: it does not check whether writing is human or AI generated.
+            It is a flag for teacher review, <strong>not a grade or verdict</strong>.
           </p>
           <p style={{ marginTop: '0.6rem', fontSize: '1.1rem' }}>
             Overall Engagement: <ScoreBadge score={avgScore} />
@@ -301,12 +300,6 @@ export default function Results({ submission, session, onReset, onNavigateToDash
                 <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{sentence}</p>
               </div>
             ))}
-            {essayPlan?.introTransition && (
-              <div>
-                <strong>Sentence 5 — Transition to Body:</strong>
-                <p style={{ marginTop: '0.2rem', whiteSpace: 'pre-wrap' }}>{essayPlan.introTransition}</p>
-              </div>
-            )}
           </div>
 
           {/* Essay Body Paragraphs 1-3 Breakdown */}
